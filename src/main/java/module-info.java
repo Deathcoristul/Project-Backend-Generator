@@ -12,8 +12,9 @@ module com.app.generator {
     requires java.desktop;
     requires org.ainslec.picocog;
     requires org.apache.commons.lang3;
+    requires initializr.generator;
     requires maven.model;
-
+    requires plexus.utils;
     opens com.app.generator to javafx.fxml;
     exports com.app.generator;
     exports com.app.generator.util;

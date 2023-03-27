@@ -2,6 +2,7 @@ package com.app.generator;
 
 import com.app.generator.util.*;
 import com.app.generator.util.Repository;
+import io.spring.initializr.generator.buildsystem.gradle.GradleBuild;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -23,7 +24,9 @@ import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.*;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
-//import org.gradle.api.*;
+import io.spring.initializr.generator.buildsystem.gradle.GradleBuildWriter;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+
 import static javax.swing.JOptionPane.showMessageDialog;
 
 public class AppController implements Initializable {
@@ -99,9 +102,19 @@ public class AppController implements Initializable {
     public Button addRepositoryButton;
     public TextField DatabaseLink;
     public ComboBox<String> DatabaseType;
+    public AnchorPane dependencyAnchorPane;
+    public Button dependencyCancelButton;
+    public Button dependencyOKButton;
+    public TextField dependencyGroupField;
+    public TextField dependencyArtifactField;
+    public ComboBox<Object> dependencyOptionalCombobox;
+    public TextField dependencyTypeField;
+    public ComboBox<String> dependencyScopeCombobox;
+    public TextField dependencyVersionField;
     private String locationURI;
     private String language;
     private boolean mustEdit=false;
+    private boolean isJakarta=true,lombok=false;
     private String endChar;
     private String langExtension;
 
@@ -114,15 +127,13 @@ public class AppController implements Initializable {
         this.SpringBootVersion.getItems().setAll("3.0.3-SNAPSHOT","3.0.2","2.7.9-SNAPSHOT","2.7.8");
         this.DatabaseType.getItems().setAll("None","Mongo","MySQL");
         this.typeCombobox.getItems().setAll("String","Integer","Boolean","UUID","Double","Date");
+        this.dependencyOptionalCombobox.getItems().setAll("",true,false);
         this.columnName.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getKey()));
         this.columnType.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue()));
         this.language="ro";
     }
     public void onAddDependency() {
-        Dependency dependency=new Dependency();
-        dependency.setGroupId(DependencyName.getText());
-        dependency.setArtifactId(DependencyName.getText());
-        DependenciesList.getItems().add(dependency);
+        popUp(dependencyAnchorPane);
     }
 
     public void onAddRepository() {
@@ -224,11 +235,9 @@ public class AppController implements Initializable {
                 }
                 f.mkdir();
                 if(this.ProjectManager.getValue().equals("Maven"))
-                    //TODO Maven function
                     buildMaven();
                 else if(this.ProjectManager.getValue().equals("Gradle"))
-                //TODO Gradle function
-                    ;
+                    buildGradle();
                 locationURI+="\\src";
                 f=new File(locationURI);
                 if(!f.exists()){
@@ -249,6 +258,12 @@ public class AppController implements Initializable {
         langExtension="";
     }
 
+    private void buildGradle() {
+        //TODO Gradle
+        GradleBuild build=new GradleBuild();
+        build.plugins().add("org.springframework.boot");
+        //build
+    }
 
 
     private void deleteRecursively(File file)
@@ -318,7 +333,7 @@ public class AppController implements Initializable {
         fileWriter.close();
         //----------------------------------------------
         //TODO lucrul la dependinte,momentan vom presupune adevaruri
-        boolean isJakarta=true,lombok=false;
+
         //----------------------------------------------
         if(!DatabaseType.getValue().equals("None")) {
             if (this.DomainList.getItems().size() != 0) {
@@ -446,11 +461,13 @@ public class AppController implements Initializable {
         model.setArtifactId(this.Artifact.getText());
         model.setGroupId(this.Group.getText());
         model.setName(this.ProjectName.getText());
-        model.setDescription(this.Description.getText());
-
+        model.setDescription(this.Description.getText().equals("")?"Demo":this.Description.getText());
+        model.setPackaging(this.PackageType.getValue().toLowerCase());
         Properties properties = new Properties();
         properties.setProperty("java.version",this.JavaVersion.getValue().toString());
-        //TODO pentru kotlin
+
+        if(this.Language.getValue().equals("Kotlin"))
+            properties.setProperty("kotlin.version","1.8.0");
         model.setProperties(properties);
 
         List<Dependency> dependencyList=new ArrayList<>();
@@ -485,7 +502,19 @@ public class AppController implements Initializable {
         Plugin plugin=new Plugin();
         plugin.setGroupId("org.springframework.boot");
         plugin.setArtifactId("spring-boot-maven-plugin");
+        if(lombok)
+        {
+            List<Exclusion> exclusions=new ArrayList<>();
+            Exclusion exclusion = new Exclusion();
+            exclusion.setGroupId("org.projectlombok");
+            exclusion.setArtifactId("lombok");
+            exclusions.add(exclusion);
+            Xpp3Dom config = new Xpp3Dom("configuration");
+            config.addChild((Xpp3Dom) exclusions);
+            plugin.setConfiguration(config);
+        }
         pluginList.add(plugin);
+
         if(langExtension.equals("kt"))
         {
             build.setOutputDirectory("${project.basedir}/src/main/kotlin");
@@ -493,7 +522,19 @@ public class AppController implements Initializable {
             plugin=new Plugin();
             plugin.setGroupId("org.jetbrains.kotlin");
             plugin.setArtifactId("kotlin-maven-plugin");
-            //TODO setConfiguration
+            Xpp3Dom config = new Xpp3Dom("configuration");
+            Xpp3Dom args=new Xpp3Dom("args");
+            Xpp3Dom arg=new Xpp3Dom("arg");
+            arg.setValue("-Xjsr305=strict");
+            args.addChild(arg);
+            config.addChild(args);
+
+            Xpp3Dom compilerPlugins=new Xpp3Dom("compilerPlugins");
+            Xpp3Dom cplugin=new Xpp3Dom("plugin");
+            cplugin.setValue("spring");
+            compilerPlugins.addChild(cplugin);
+            config.addChild(compilerPlugins);
+            plugin.setConfiguration(config);
             List<Dependency> kotlinDependencies=new ArrayList<>();
             dependency=new Dependency();
             dependency.setGroupId("org.jetbrains.kotlin");
@@ -508,6 +549,7 @@ public class AppController implements Initializable {
         new MavenXpp3Writer().write(writer,model);
     }
     public void onRemoveDependency(ActionEvent actionEvent) {
+        this.DependenciesList.getItems().remove(this.DependenciesList.getSelectionModel().getSelectedItem());
     }
 
     public void onRemoveRepository() {
@@ -670,6 +712,8 @@ public class AppController implements Initializable {
         serviceAnchorPane.setDisable(true);
         controllerAnchorPane.setVisible(false);
         controllerAnchorPane.setDisable(true);
+        dependencyAnchorPane.setVisible(false);
+        dependencyAnchorPane.setDisable(true);
         DomainField.clear();
         fieldTextField.clear();
         RelationField.clear();
@@ -696,7 +740,8 @@ public class AppController implements Initializable {
         pane.setDisable(false);
         pane.setVisible(true);
     }
-
+    public void OK_Dependency(ActionEvent actionEvent) {
+    }
     public void OK_Domain(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
             if(this.DatabaseType.getValue()==null || this.DatabaseType.getValue().equals("None"))
@@ -925,7 +970,20 @@ public class AppController implements Initializable {
 
 
     public void onUpdateDependency(ActionEvent actionEvent) {
-
+        mustEdit=true;
+        Dependency dependency = this.DependenciesList.getSelectionModel().getSelectedItem();
+        if(dependency!=null)
+        {
+            popUp(dependencyAnchorPane);
+            dependencyGroupField.setText(dependency.getGroupId());
+            dependencyArtifactField.setText(dependency.getArtifactId());
+            if(dependency.getType() != null)
+                dependencyTypeField.setText(dependency.getType());
+            if(dependency.getScope() != null)
+                dependencyScopeCombobox.setValue(dependency.getScope());
+            if(dependency.getVersion()!=null)
+                dependencyVersionField.setText(dependency.getVersion());
+        }
     }
 
     public void onUpdateRepository(ActionEvent actionEvent) {
@@ -997,4 +1055,6 @@ public class AppController implements Initializable {
         this.repositoryCombobox.getItems().clear();
         this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MySQL"));
     }
+
+
 }
