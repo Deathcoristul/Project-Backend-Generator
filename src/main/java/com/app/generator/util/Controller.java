@@ -2,15 +2,12 @@ package com.app.generator.util;
 
 import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 
 public class Controller {
-    private String name;
-    private ArrayList<Service> services;
+    private final String name;
+    private final ArrayList<Service> services;
 
     public Controller(String name, ArrayList<Service> services) {
         this.name = name;
@@ -21,9 +18,6 @@ public class Controller {
         return services;
     }
 
-    public void setServices(ArrayList<Service> services) {
-        this.services = services;
-    }
 
     public String getName() {
         return name;

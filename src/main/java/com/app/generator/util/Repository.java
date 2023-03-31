@@ -3,14 +3,11 @@ package com.app.generator.util;
 import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 
 public class Repository {
-    private String name;
-    private Domain domain;
+    private final String name;
+    private final Domain domain;
 
     public Repository(String name, Domain domain) {
         this.name = name;
@@ -21,9 +18,6 @@ public class Repository {
         return domain;
     }
 
-    public void setDomain(Domain domain) {
-        this.domain = domain;
-    }
     public String getName() {
         return name;
     }

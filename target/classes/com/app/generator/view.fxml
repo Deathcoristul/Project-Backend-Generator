@@ -7,7 +7,7 @@
 <?import javafx.scene.text.*?>
 
 <AnchorPane fx:id="mainAnchorPane" prefHeight="650.0" prefWidth="684.0" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.generator.AppController">
-   <Label fx:id="TitleLabel" alignment="CENTER" prefHeight="60.0" prefWidth="684.0" style="-fx-background-color: #0f5401;" text="Application Generator" textAlignment="CENTER" textOverrun="CLIP" wrapText="true">
+   <Label fx:id="TitleLabel" alignment="CENTER" prefHeight="60.0" prefWidth="684.0" style="-fx-background-color: #0f5401;" text="Project Generator" textAlignment="CENTER" textOverrun="CLIP" wrapText="true">
       <font>
          <Font name="Bauhaus 93" size="46.0" />
       </font>
@@ -38,8 +38,7 @@
    <TextField fx:id="Description" layoutX="192.0" layoutY="108.0" promptText="Descriere" stylesheets="@styles.css" />
    <TextField fx:id="Artifact" layoutX="353.0" layoutY="108.0" onKeyTyped="#onGroupOrArtifactTextChanged" promptText="Artefact" stylesheets="@styles.css" />
    <ComboBox fx:id="PackageType" layoutX="520.0" layoutY="143.0" prefWidth="150.0" promptText="Împachetare" stylesheets="@styles.css" />
-   <TextField fx:id="DependencyName" layoutX="192.0" layoutY="143.0" promptText="Dependință" stylesheets="@styles.css" />
-   <Button fx:id="addDependencyButton" layoutX="353.0" layoutY="143.0" mnemonicParsing="false" onAction="#onAddDependency" prefHeight="26.0" prefWidth="149.0" stylesheets="@styles.css" text="Adaugă dependință" />
+   <Button fx:id="addDependencyButton" layoutX="193.0" layoutY="143.0" mnemonicParsing="false" onAction="#onAddDependency" prefHeight="27.0" prefWidth="310.0" stylesheets="@styles.css" text="Adaugă dependință" />
    <ListView fx:id="DependenciesList" layoutX="192.0" layoutY="198.0" prefHeight="119.0" prefWidth="310.0" stylesheets="@styles.css">
       <contextMenu>
          <ContextMenu>
@@ -202,14 +201,16 @@
          </ListView>
       </children>
    </AnchorPane>
-   <AnchorPane fx:id="dependencyAnchorPane" disable="true" layoutX="276.0" layoutY="198.0" prefHeight="243.0" prefWidth="289.0" style="-fx-background-color: white;" visible="false">
+   <AnchorPane fx:id="dependencyAnchorPane" disable="true" layoutX="265.0" layoutY="116.0" prefHeight="302.0" prefWidth="254.0" style="-fx-background-color: white;" visible="false">
       <children>
-         <Button fx:id="controllerCancelButton1" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
-         <Button layoutX="26.0" layoutY="203.0" mnemonicParsing="false" onAction="#OK_Controller" text="OK" />
-         <TextField fx:id="ControllerField1" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume controller" stylesheets="@styles.css" />
-         <ComboBox fx:id="serviceCombobox1" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="102.0" promptText="Serviciu" />
-         <Button fx:id="button_addService1" layoutX="147.0" layoutY="56.0" mnemonicParsing="false" onAction="#onAddServiceInController" prefHeight="27.0" prefWidth="126.0" text="Adaugă serviciu" />
-         <ListView fx:id="controllerServiceList1" layoutX="26.0" layoutY="97.0" prefHeight="92.0" prefWidth="246.0" />
+         <Button fx:id="dependencyCancelButton" layoutX="159.0" layoutY="254.0" minWidth="-Infinity" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
+         <Button fx:id="dependencyOKButton" layoutX="26.0" layoutY="254.0" mnemonicParsing="false" onAction="#OK_Dependency" text="OK" />
+         <TextField fx:id="dependencyGroupField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Grup" stylesheets="@styles.css" />
+         <TextField fx:id="dependencyArtifactField" layoutX="26.0" layoutY="54.0" prefHeight="26.0" prefWidth="202.0" promptText="Artefact" />
+         <ComboBox fx:id="dependencyOptionalCombobox" layoutX="26.0" layoutY="94.0" prefHeight="26.0" prefWidth="202.0" promptText="Optional" />
+         <TextField fx:id="dependencyTypeField" layoutX="26.0" layoutY="214.0" prefHeight="26.0" prefWidth="202.0" promptText="Tip" />
+         <ComboBox fx:id="dependencyScopeCombobox" layoutX="26.0" layoutY="174.0" prefHeight="26.0" prefWidth="202.0" promptText="Scop" />
+         <TextField fx:id="dependencyVersionField" layoutX="26.0" layoutY="134.0" prefHeight="26.0" prefWidth="202.0" promptText="Versiune" />
       </children>
    </AnchorPane>
 </AnchorPane>

@@ -4,16 +4,13 @@ import javafx.util.Pair;
 import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 
 
 public class Domain {
-    private String name;
-    private ArrayList<Pair<String,String>> fields;
+    private final String name;
+    private final ArrayList<Pair<String,String>> fields;
     private boolean isRelation=false;
     private Domain relationClass=null;
 
@@ -21,9 +18,6 @@ public class Domain {
         return relationClass;
     }
 
-    public void setRelationClass(Domain relationClass) {
-        this.relationClass = relationClass;
-    }
 
     public Domain(String name, ArrayList<Pair<String, String>> fields, Domain relationClass) {// pentru mongo
         this.name = name;
@@ -47,10 +41,6 @@ public class Domain {
     }
     public ArrayList<Pair<String, String>> getFields() {
         return fields;
-    }
-
-    public void setFields(ArrayList<Pair<String, String>> fields) {
-        this.fields = fields;
     }
 
     public String getName() {

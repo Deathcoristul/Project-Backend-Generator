@@ -18,7 +18,7 @@ import javafx.util.Pair;
 import org.ainslec.picocog.*;
 import javax.swing.*;
 import java.io.*;
-import java.lang.module.Configuration;
+
 import java.net.URL;
 import java.util.*;
 import org.apache.commons.lang3.StringUtils;
@@ -84,7 +84,6 @@ public class AppController implements Initializable {
     public TextField Description;
     public TextField Artifact;
     public ComboBox<String> PackageType;
-    public TextField DependencyName;
     public Button addDependencyButton;
     public ListView<Dependency> DependenciesList;
     public ListView<Repository> RepositoriesList;
@@ -123,11 +122,12 @@ public class AppController implements Initializable {
         this.ProjectManager.getItems().setAll("Gradle","Maven");
         this.PackageType.getItems().setAll("Jar","War");
         this.Language.getItems().setAll("Java","Kotlin");
-        this.JavaVersion.getItems().setAll(8,11,17,19);
+        this.JavaVersion.getItems().setAll(8,11,17,18);
         this.SpringBootVersion.getItems().setAll("3.0.3-SNAPSHOT","3.0.2","2.7.9-SNAPSHOT","2.7.8");
         this.DatabaseType.getItems().setAll("None","Mongo","MySQL");
         this.typeCombobox.getItems().setAll("String","Integer","Boolean","UUID","Double","Date");
         this.dependencyOptionalCombobox.getItems().setAll("",true,false);
+        this.dependencyScopeCombobox.getItems().setAll("compile","provided","runtime","test","system");
         this.columnName.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getKey()));
         this.columnType.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue()));
         this.language="ro";
@@ -181,7 +181,7 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "Proiectul nu are limbajul setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
-            if(this.DatabaseLink.getText().equals("") && !this.DatabaseType.getValue().equals("None") && this.DatabaseType.getValue()!=null)
+            if(this.DatabaseType.getValue()!=null && this.DatabaseLink.getText().equals("") && !this.DatabaseType.getValue().equals("None") )
             {
                 showMessageDialog(null, "Proiectul cu tipul de bază de date setat nu are link aceasta!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
                 return;
@@ -256,6 +256,8 @@ public class AppController implements Initializable {
         }
         locationURI="";
         langExtension="";
+        lombok=false;
+        isJakarta=false;
     }
 
     private void buildGradle() {
@@ -296,7 +298,7 @@ public class AppController implements Initializable {
                 f.mkdir();
             }
         }
-        f=new File(tempURI+"\\"+this.ProjectName.getText()+"."+langExtension);
+        f=new File(tempURI+"\\"+StringUtils.capitalize(this.ProjectName.getText())+"."+langExtension);
         PicoWriter picoWriter=new PicoWriter();
         picoWriter.writeln("package "+this.PackageName.getText()+endChar);
         picoWriter.writeln("");
@@ -331,10 +333,7 @@ public class AppController implements Initializable {
         BufferedWriter fileWriter=new BufferedWriter(new FileWriter(f));
         fileWriter.write(picoWriter.toString());
         fileWriter.close();
-        //----------------------------------------------
-        //TODO lucrul la dependinte,momentan vom presupune adevaruri
 
-        //----------------------------------------------
         if(!DatabaseType.getValue().equals("None")) {
             if (this.DomainList.getItems().size() != 0) {
                 String domainsURI = tempURI + "\\domains";
@@ -357,9 +356,8 @@ public class AppController implements Initializable {
             if (this.ServicesList.getItems().size() != 0) {
                 String servicesURI = tempURI + "\\services";
                 f = new File(servicesURI);
-                if (!f.exists()) {
+                if (!f.exists())
                     f.mkdir();
-                }
                 for (Service service : ServicesList.getItems())
                     service.write(servicesURI, langExtension);
             }
@@ -419,7 +417,7 @@ public class AppController implements Initializable {
                 f.mkdir();
             }
         }
-        tempURI+="\\"+this.ProjectName.getText()+"Tests."+langExtension;
+        tempURI+="\\"+StringUtils.capitalize(this.ProjectName.getText())+"Tests."+langExtension;
         f=new File(tempURI);
         if(!f.exists()) {
             try {
@@ -429,7 +427,7 @@ public class AppController implements Initializable {
             }
         }
         PicoWriter picoWriter=new PicoWriter();
-        picoWriter.writeln("package "+this.PackageName.getText()+endChar);
+        picoWriter.writeln("package "+StringUtils.capitalize(this.ProjectName.getText())+endChar);
         picoWriter.writeln("");
         picoWriter.writeln("import org.junit.jupiter.api.Test"+endChar);
         picoWriter.writeln("import org.springframework.boot.test.context.SpringBootTest"+endChar);
@@ -461,6 +459,7 @@ public class AppController implements Initializable {
         model.setArtifactId(this.Artifact.getText());
         model.setGroupId(this.Group.getText());
         model.setName(this.ProjectName.getText());
+        model.setVersion("0.0.1-SNAPSHOT");
         model.setDescription(this.Description.getText().equals("")?"Demo":this.Description.getText());
         model.setPackaging(this.PackageType.getValue().toLowerCase());
         Properties properties = new Properties();
@@ -477,12 +476,22 @@ public class AppController implements Initializable {
         dependencyList.add(dependency);
         dependency=new Dependency();
         dependency.setGroupId("org.springframework.boot");
+        dependency.setArtifactId("spring-boot-starter-web");
+        dependencyList.add(dependency);
+        dependency=new Dependency();
+        dependency.setGroupId("org.springframework.boot");
         dependency.setArtifactId("spring-boot-starter-test");
         dependency.setScope("test");
         dependencyList.add(dependency);
 
-        //TODO adaugare din listview
-
+        for(Dependency d : DependenciesList.getItems())
+        {
+            if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok") && d.isOptional())
+                lombok=true;
+            else if(d.getGroupId().equals("jakarta.persistence") && d.getArtifactId().equals("jakarta.persistence-api"))
+                isJakarta=true;
+            dependencyList.add(d);
+        }
         if(langExtension.equals("kt"))
         {
             dependency=new Dependency();
@@ -517,8 +526,8 @@ public class AppController implements Initializable {
 
         if(langExtension.equals("kt"))
         {
-            build.setOutputDirectory("${project.basedir}/src/main/kotlin");
-            build.setTestOutputDirectory("${project.basedir}/src/test/kotlin");
+            build.setSourceDirectory("${project.basedir}/src/main/kotlin");
+            build.setTestSourceDirectory("${project.basedir}/src/test/kotlin");
             plugin=new Plugin();
             plugin.setGroupId("org.jetbrains.kotlin");
             plugin.setArtifactId("kotlin-maven-plugin");
@@ -579,125 +588,7 @@ public class AppController implements Initializable {
         this.ProjectName.setText(this.Artifact.getText());
     }
 
-    public void onEnglishClick(MouseEvent mouseEvent) {
-        this.language="en";
-        this.GenerateButton.setText("Generate");
-        this.addControllerButton.setText("Add controller");
-        this.addDependencyButton.setText("Add dependency");
-        this.addServiceButton.setText("Add service");
-        this.addDomainButton.setText("Add domain");
-        this.addRepositoryButton.setText("Add repository");
-        this.ProjectManager.setPromptText("Project Manager");
-        this.DatabaseType.setPromptText("Database Type");
-        this.Language.setPromptText("Language");
-        this.JavaVersion.setPromptText("Java Version");
-        this.PackageType.setPromptText("Package Type");
-        this.SpringBootVersion.setPromptText("Spring Version");
-        this.Artifact.setPromptText("Artifact");
-        this.PackageName.setPromptText("Package Name");
-        this.Description.setPromptText("Description");
-        this.DependencyName.setPromptText("Dependency");
-        this.Group.setPromptText("Group");
-        this.ProjectName.setPromptText("Project Name");
-        this.DomainField.setPromptText("Domain");
-        this.button_addField.setText("Add field");
-        this.ServiceField.setPromptText("Service");
-        this.RepositoryField.setPromptText("Repository");
-        this.DatabaseLink.setPromptText("Database Link");
-        this.RepositoryLabel.setText("Repositories");
-        this.ControllerLabel.setText("Controllers");
-        this.DependencyLabel.setText("Dependencies");
-        this.ServiceLabel.setText("Services");
-        this.DomainLabel.setText("Domains");
-        this.domainCancelButton.setText("Cancel");
-        this.repositoryCancelButton.setText("Cancel");
-        this.serviceCancelButton.setText("Cancel");
-        this.controllerCancelButton.setText("Cancel");
-        this.typeCombobox.setPromptText("Type");
-        this.fieldTextField.setPromptText("Field Name");
-        this.domainCombobox.setPromptText("Domain");
-        this.repositoryCombobox.setPromptText("Repository");
-        this.button_addRepository.setText("Add repository");
-        this.serviceCombobox.setPromptText("Service");
-        this.button_addService.setText("Add service");
-        this.DependencyContextUpdate.setText("Update");
-        this.DependencyContextDelete.setText("Delete");
-        this.DomainContextUpdate.setText("Update");
-        this.DomainContextDelete.setText("Delete");
-        this.RepositoryContextUpdate.setText("Update");
-        this.RepositoryContextDelete.setText("Delete");
-        this.ServiceContextUpdate.setText("Update");
-        this.ServiceContextDelete.setText("Delete");
-        this.ControllerContextUpdate.setText("Update");
-        this.ControllerContextDelete.setText("Delete");
-        this.columnName.setText("Name");
-        this.columnType.setText("Type");
-        this.ControllerContextServiceDelete.setText("Delete");
-        this.ServiceContextRepositoryDelete.setText("Delete");
-        this.DomainContextFieldDelete.setText("Delete");
-        this.RelationField.setPromptText("Relation Name");
-        this.relationCombobox.setPromptText("Relation");
-    }
 
-    public void onRomanianClick(MouseEvent mouseEvent) {
-        this.language="ro";
-        this.GenerateButton.setText("Generează");
-        this.addControllerButton.setText("Adaugă controller");
-        this.addDependencyButton.setText("Adaugă dependință");
-        this.addServiceButton.setText("Adaugă serviciu");
-        this.addDomainButton.setText("Adaugă domeniu");
-        this.addRepositoryButton.setText("Adaugă repozitoriu");
-        this.ProjectManager.setPromptText("Gestionar de proiect");
-        this.DatabaseType.setPromptText("Tip bază de date");
-        this.Language.setPromptText("Limbaj de programare");
-        this.JavaVersion.setPromptText("Versiune Java");
-        this.PackageType.setPromptText("Împachetare");
-        this.SpringBootVersion.setPromptText("Versiune Spring");
-        this.Artifact.setPromptText("Artefact");
-        this.PackageName.setPromptText("Nume pachet");
-        this.Description.setPromptText("Descriere");
-        this.DependencyName.setPromptText("Dependință");
-        this.Group.setPromptText("Grup");
-        this.ProjectName.setPromptText("Nume proiect");
-        this.DomainField.setPromptText("Domeniu");
-        this.ServiceField.setPromptText("Serviciu");
-        this.RepositoryField.setPromptText("Repozitoriu");
-        this.DatabaseLink.setPromptText("Link către bază de date");
-        this.RepositoryLabel.setText("Repozitorii");
-        this.ControllerLabel.setText("Controller-e");
-        this.DependencyLabel.setText("Dependințe");
-        this.ServiceLabel.setText("Servicii");
-        this.DomainLabel.setText("Domenii");
-        this.button_addField.setText("Adaugă atribut");
-        this.domainCancelButton.setText("Anulează");
-        this.repositoryCancelButton.setText("Anulează");
-        this.serviceCancelButton.setText("Anulează");
-        this.controllerCancelButton.setText("Anulează");
-        this.typeCombobox.setPromptText("Tip atribut");
-        this.fieldTextField.setPromptText("Nume atribut");
-        this.domainCombobox.setPromptText("Domeniu");
-        this.repositoryCombobox.setPromptText("Repozitoriu");
-        this.button_addRepository.setText("Adaugă repozitoriu");
-        this.serviceCombobox.setPromptText("Serviciu");
-        this.button_addService.setText("Adaugă serviciu");
-        this.DependencyContextUpdate.setText("Modifică");
-        this.DependencyContextDelete.setText("Șterge");
-        this.DomainContextUpdate.setText("Modifică");
-        this.DomainContextDelete.setText("Șterge");
-        this.RepositoryContextUpdate.setText("Modifică");
-        this.RepositoryContextDelete.setText("Șterge");
-        this.ServiceContextUpdate.setText("Modifică");
-        this.ServiceContextDelete.setText("Șterge");
-        this.ControllerContextUpdate.setText("Modifică");
-        this.ControllerContextDelete.setText("Șterge");
-        this.columnName.setText("Nume");
-        this.columnType.setText("Tip");
-        this.ControllerContextServiceDelete.setText("Șterge");
-        this.ServiceContextRepositoryDelete.setText("Șterge");
-        this.DomainContextFieldDelete.setText("Șterge");
-        this.RelationField.setPromptText("Nume Relație");
-        this.relationCombobox.setPromptText("Relație");
-    }
 
     public void returnToMain() {
         for(Node n : mainAnchorPane.getChildren())
@@ -714,6 +605,12 @@ public class AppController implements Initializable {
         controllerAnchorPane.setDisable(true);
         dependencyAnchorPane.setVisible(false);
         dependencyAnchorPane.setDisable(true);
+        dependencyGroupField.clear();
+        dependencyArtifactField.clear();
+        dependencyScopeCombobox.setValue(null);
+        dependencyOptionalCombobox.setValue(null);
+        dependencyTypeField.clear();
+        dependencyVersionField.clear();
         DomainField.clear();
         fieldTextField.clear();
         RelationField.clear();
@@ -741,6 +638,56 @@ public class AppController implements Initializable {
         pane.setVisible(true);
     }
     public void OK_Dependency(ActionEvent actionEvent) {
+        if(this.language.equals("ro")) {
+            if (dependencyGroupField.getText().equals("")) {
+                showMessageDialog(null, "Dependința nu are grupul setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            if (dependencyArtifactField.getText().equals(""))
+            {
+                showMessageDialog(null, "Dependința nu are artefactul setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+        }
+        else
+        {
+            if (dependencyGroupField.getText().equals("")) {
+                showMessageDialog(null, "The Dependency has no group!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            if (dependencyArtifactField.getText().equals(""))
+            {
+                showMessageDialog(null, "The Dependency has no artifact!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+        }
+        Dependency dependency = new Dependency(){
+            @Override
+            public String toString(){
+                if(this.getVersion()==null)
+                    return this.getGroupId()+":"+this.getArtifactId();
+                else
+                    return this.getGroupId()+":"+this.getArtifactId()+this.getVersion();
+            }
+        };
+        dependency.setGroupId(dependencyGroupField.getText());
+        dependency.setArtifactId(dependencyArtifactField.getText());
+        if(!dependencyVersionField.getText().equals(""))
+            dependency.setVersion(dependencyVersionField.getText());
+        if(dependencyOptionalCombobox.getValue()!=null)
+            dependency.setOptional((Boolean) dependencyOptionalCombobox.getValue());
+        if(dependencyScopeCombobox.getValue()!=null)
+            dependency.setScope(dependencyScopeCombobox.getValue());
+        if(!dependencyTypeField.getText().equals(""))
+            dependency.setType(dependencyTypeField.getText());
+        if(mustEdit){
+            this.DependenciesList.getItems().add(DependenciesList.getSelectionModel().getSelectedIndex(),dependency);
+            this.DependenciesList.getItems().remove(DependenciesList.getSelectionModel().getSelectedItem());
+        }
+        else{
+            this.DependenciesList.getItems().add(dependency);
+        }
+        returnToMain();
     }
     public void OK_Domain(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
@@ -1056,5 +1003,137 @@ public class AppController implements Initializable {
         this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MySQL"));
     }
 
+    public void onEnglishClick(MouseEvent mouseEvent) {
+        this.language="en";
+        this.GenerateButton.setText("Generate");
+        this.addControllerButton.setText("Add controller");
+        this.addDependencyButton.setText("Add dependency");
+        this.addServiceButton.setText("Add service");
+        this.addDomainButton.setText("Add domain");
+        this.addRepositoryButton.setText("Add repository");
+        this.ProjectManager.setPromptText("Project Manager");
+        this.DatabaseType.setPromptText("Database Type");
+        this.Language.setPromptText("Language");
+        this.JavaVersion.setPromptText("Java Version");
+        this.PackageType.setPromptText("Package Type");
+        this.SpringBootVersion.setPromptText("Spring Version");
+        this.Artifact.setPromptText("Artifact");
+        this.PackageName.setPromptText("Package Name");
+        this.Description.setPromptText("Description");
+        this.Group.setPromptText("Group");
+        this.ProjectName.setPromptText("Project Name");
+        this.DomainField.setPromptText("Domain");
+        this.button_addField.setText("Add field");
+        this.ServiceField.setPromptText("Service");
+        this.RepositoryField.setPromptText("Repository");
+        this.DatabaseLink.setPromptText("Database Link");
+        this.RepositoryLabel.setText("Repositories");
+        this.ControllerLabel.setText("Controllers");
+        this.DependencyLabel.setText("Dependencies");
+        this.ServiceLabel.setText("Services");
+        this.DomainLabel.setText("Domains");
+        this.domainCancelButton.setText("Cancel");
+        this.repositoryCancelButton.setText("Cancel");
+        this.serviceCancelButton.setText("Cancel");
+        this.controllerCancelButton.setText("Cancel");
+        this.typeCombobox.setPromptText("Type");
+        this.fieldTextField.setPromptText("Field Name");
+        this.domainCombobox.setPromptText("Domain");
+        this.repositoryCombobox.setPromptText("Repository");
+        this.button_addRepository.setText("Add repository");
+        this.serviceCombobox.setPromptText("Service");
+        this.button_addService.setText("Add service");
+        this.DependencyContextUpdate.setText("Update");
+        this.DependencyContextDelete.setText("Delete");
+        this.DomainContextUpdate.setText("Update");
+        this.DomainContextDelete.setText("Delete");
+        this.RepositoryContextUpdate.setText("Update");
+        this.RepositoryContextDelete.setText("Delete");
+        this.ServiceContextUpdate.setText("Update");
+        this.ServiceContextDelete.setText("Delete");
+        this.ControllerContextUpdate.setText("Update");
+        this.ControllerContextDelete.setText("Delete");
+        this.columnName.setText("Name");
+        this.columnType.setText("Type");
+        this.ControllerContextServiceDelete.setText("Delete");
+        this.ServiceContextRepositoryDelete.setText("Delete");
+        this.DomainContextFieldDelete.setText("Delete");
+        this.RelationField.setPromptText("Relation Name");
+        this.relationCombobox.setPromptText("Relation");
+        this.ControllerField.setPromptText("Controller");
 
+        this.dependencyArtifactField.setPromptText("Artifact");
+        this.dependencyTypeField.setPromptText("Type");
+        this.dependencyScopeCombobox.setPromptText("Scope");
+        this.dependencyGroupField.setPromptText("Group");
+        this.dependencyVersionField.setPromptText("Version");
+        this.dependencyCancelButton.setText("Cancel");
+    }
+
+    public void onRomanianClick(MouseEvent mouseEvent) {
+        this.language="ro";
+        this.GenerateButton.setText("Generează");
+        this.addControllerButton.setText("Adaugă controller");
+        this.addDependencyButton.setText("Adaugă dependință");
+        this.addServiceButton.setText("Adaugă serviciu");
+        this.addDomainButton.setText("Adaugă domeniu");
+        this.addRepositoryButton.setText("Adaugă repozitoriu");
+        this.ProjectManager.setPromptText("Gestionar de proiect");
+        this.DatabaseType.setPromptText("Tip bază de date");
+        this.Language.setPromptText("Limbaj de programare");
+        this.JavaVersion.setPromptText("Versiune Java");
+        this.PackageType.setPromptText("Împachetare");
+        this.SpringBootVersion.setPromptText("Versiune Spring");
+        this.Artifact.setPromptText("Artefact");
+        this.PackageName.setPromptText("Nume pachet");
+        this.Description.setPromptText("Descriere");
+        this.Group.setPromptText("Grup");
+        this.ProjectName.setPromptText("Nume proiect");
+        this.DomainField.setPromptText("Domeniu");
+        this.ServiceField.setPromptText("Serviciu");
+        this.RepositoryField.setPromptText("Repozitoriu");
+        this.DatabaseLink.setPromptText("Link către bază de date");
+        this.RepositoryLabel.setText("Repozitorii");
+        this.ControllerLabel.setText("Controller-e");
+        this.DependencyLabel.setText("Dependințe");
+        this.ServiceLabel.setText("Servicii");
+        this.DomainLabel.setText("Domenii");
+        this.button_addField.setText("Adaugă atribut");
+        this.domainCancelButton.setText("Anulează");
+        this.repositoryCancelButton.setText("Anulează");
+        this.serviceCancelButton.setText("Anulează");
+        this.controllerCancelButton.setText("Anulează");
+        this.typeCombobox.setPromptText("Tip atribut");
+        this.fieldTextField.setPromptText("Nume atribut");
+        this.domainCombobox.setPromptText("Domeniu");
+        this.repositoryCombobox.setPromptText("Repozitoriu");
+        this.button_addRepository.setText("Adaugă repozitoriu");
+        this.serviceCombobox.setPromptText("Serviciu");
+        this.button_addService.setText("Adaugă serviciu");
+        this.DependencyContextUpdate.setText("Modifică");
+        this.DependencyContextDelete.setText("Șterge");
+        this.DomainContextUpdate.setText("Modifică");
+        this.DomainContextDelete.setText("Șterge");
+        this.RepositoryContextUpdate.setText("Modifică");
+        this.RepositoryContextDelete.setText("Șterge");
+        this.ServiceContextUpdate.setText("Modifică");
+        this.ServiceContextDelete.setText("Șterge");
+        this.ControllerContextUpdate.setText("Modifică");
+        this.ControllerContextDelete.setText("Șterge");
+        this.columnName.setText("Nume");
+        this.columnType.setText("Tip");
+        this.ControllerContextServiceDelete.setText("Șterge");
+        this.ServiceContextRepositoryDelete.setText("Șterge");
+        this.DomainContextFieldDelete.setText("Șterge");
+        this.RelationField.setPromptText("Nume Relație");
+        this.relationCombobox.setPromptText("Relație");
+        this.ControllerField.setPromptText("Nume controller");
+
+        this.dependencyArtifactField.setPromptText("Artefact");
+        this.dependencyTypeField.setPromptText("Tip");
+        this.dependencyScopeCombobox.setPromptText("Scop");
+        this.dependencyGroupField.setPromptText("Grup");
+        this.dependencyVersionField.setPromptText("Versiune");
+        this.dependencyCancelButton.setText("Anulează");
+    }
 }

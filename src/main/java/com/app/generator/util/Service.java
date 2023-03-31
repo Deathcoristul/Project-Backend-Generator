@@ -3,15 +3,12 @@ package com.app.generator.util;
 import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 
 public class Service {
-    private String name;
-    private ArrayList<Repository> repositories;
+    private final String name;
+    private final ArrayList<Repository> repositories;
 
     public Service(String name, ArrayList<Repository> repositories) {
         this.name = name;
@@ -20,10 +17,6 @@ public class Service {
 
     public ArrayList<Repository> getRepositories() {
         return repositories;
-    }
-
-    public void setRepositories(ArrayList<Repository> repositories) {
-        this.repositories = repositories;
     }
 
     public String getName() {
