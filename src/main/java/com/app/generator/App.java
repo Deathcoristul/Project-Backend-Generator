@@ -11,13 +11,25 @@ import java.util.Objects;
 
 public class App extends Application {
     @Override
-    public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("view.fxml"));
-        Scene scene = new Scene(fxmlLoader.load());
-        stage.setTitle("Application Generator");
-        stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("icon.png"))));
+    public void start(Stage stage) {
+        try {
+            FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("view.fxml"));
+            Scene scene = new Scene(fxmlLoader.load());
+            stage.setScene(scene);
+        }
+        catch (Exception ex)
+        {
+            System.err.println("No fxml file!");
+        }
 
-        stage.setScene(scene);
+        stage.setTitle("Project Generator");
+        try {
+            stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("icon.png"))));
+        }
+        catch (Exception ex)
+        {
+            System.err.println("No icon!");
+        }
         stage.setResizable(false);
         stage.show();
     }

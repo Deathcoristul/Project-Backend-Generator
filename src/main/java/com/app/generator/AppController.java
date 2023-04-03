@@ -106,14 +106,15 @@ public class AppController implements Initializable {
     public Button dependencyOKButton;
     public TextField dependencyGroupField;
     public TextField dependencyArtifactField;
-    public ComboBox<Object> dependencyOptionalCombobox;
+    public ComboBox<Boolean> dependencyOptionalCombobox;
     public TextField dependencyTypeField;
     public ComboBox<String> dependencyScopeCombobox;
     public TextField dependencyVersionField;
+
     private String locationURI;
     private String language;
     private boolean mustEdit=false;
-    private boolean isJakarta=true,lombok=false;
+    private boolean isJakarta=false,lombok=false;
     private String endChar;
     private String langExtension;
 
@@ -124,12 +125,13 @@ public class AppController implements Initializable {
         this.Language.getItems().setAll("Java","Kotlin");
         this.JavaVersion.getItems().setAll(8,11,17,18);
         this.SpringBootVersion.getItems().setAll("3.0.3-SNAPSHOT","3.0.2","2.7.9-SNAPSHOT","2.7.8");
-        this.DatabaseType.getItems().setAll("None","Mongo","MySQL");
+        this.DatabaseType.getItems().setAll("None","MongoDB","MySQL");
         this.typeCombobox.getItems().setAll("String","Integer","Boolean","UUID","Double","Date");
-        this.dependencyOptionalCombobox.getItems().setAll("",true,false);
+        this.dependencyOptionalCombobox.getItems().setAll(true,false);
         this.dependencyScopeCombobox.getItems().setAll("compile","provided","runtime","test","system");
         this.columnName.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getKey()));
         this.columnType.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue()));
+        this.domainFieldTable.setPlaceholder(new Label(""));
         this.language="ro";
     }
     public void onAddDependency() {
@@ -186,6 +188,11 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "Proiectul cu tipul de bază de date setat nu are link aceasta!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
+            if(this.SpringBootVersion.getValue().startsWith("3") && this.JavaVersion.getValue()<17)
+            {
+                showMessageDialog(null, "Pentru versiunea "+this.SpringBootVersion.getValue()+" utilizați o versiune Java de minim 17!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
         }
         else{
             if (this.ProjectManager.getValue() == null) {
@@ -211,6 +218,11 @@ public class AppController implements Initializable {
             if(this.DatabaseLink.getText().equals("") && !this.DatabaseType.getValue().equals("None") && this.DatabaseType.getValue()!=null)
             {
                 showMessageDialog(null, "The project has not a link for the database set!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                return;
+            }
+            if(this.SpringBootVersion.getValue().startsWith("3") && this.JavaVersion.getValue()<17)
+            {
+                showMessageDialog(null, "For Spring Boot Version "+this.SpringBootVersion.getValue()+", you must use a Java version at least 17!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
         }
@@ -284,7 +296,7 @@ public class AppController implements Initializable {
             f.mkdir();
         }
         buildResources(tempURI+"\\resources");
-        tempURI+="\\"+this.Language.getValue().toLowerCase(Locale.ROOT);
+        tempURI+="\\"+this.Language.getValue().toLowerCase();
         f=new File(tempURI);
         if(!f.exists()){
             f.mkdir();
@@ -382,7 +394,7 @@ public class AppController implements Initializable {
         PicoWriter picoWriter=new PicoWriter();
         picoWriter.writeln("server.port=8080");
         if(!this.DatabaseLink.getText().equals("")) {
-            if (this.DatabaseType.getValue().equals("Mongo")) {
+            if (this.DatabaseType.getValue().equals("MongoDB")) {
                 picoWriter.writeln("spring.data.mongodb.uri="+this.DatabaseLink.getText());
                 picoWriter.writeln("spring.data.mongodb.database="+this.ProjectName.getText());
             } else if (this.DatabaseType.getValue().equals("MySQL")) {
@@ -484,12 +496,39 @@ public class AppController implements Initializable {
         dependency.setScope("test");
         dependencyList.add(dependency);
 
+        if(DatabaseType.getValue().equals("MySQL"))
+        {
+            Dependency d=new Dependency();
+            d.setGroupId("org.springframework.boot");
+            d.setArtifactId("spring-boot-starter-data-jpa");
+            dependencyList.add(d);
+            d=new Dependency();
+            d.setGroupId("org.springframework.boot");
+            d.setArtifactId("spring-boot-starter-data-rest");
+            dependencyList.add(d);
+            d=new Dependency();
+            d.setGroupId("org.springframework.boot");
+            d.setArtifactId("spring-boot-starter-validation");
+            dependencyList.add(d);
+            d=new Dependency();
+            d.setGroupId("org.mariadb.jdbc");
+            d.setArtifactId("mariadb-java-client");
+            d.setScope("runtime");
+            dependencyList.add(d);
+        }
+        else if(DatabaseType.getValue().equals("MongoDB"))
+        {
+            Dependency d=new Dependency();
+            d.setGroupId("org.springframework.boot");
+            d.setArtifactId("spring-boot-starter-data-mongodb");
+            dependencyList.add(d);
+        }
+        if(!SpringBootVersion.getValue().startsWith("2"))
+            isJakarta=true;
         for(Dependency d : DependenciesList.getItems())
         {
             if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok") && d.isOptional())
                 lombok=true;
-            else if(d.getGroupId().equals("jakarta.persistence") && d.getArtifactId().equals("jakarta.persistence-api"))
-                isJakarta=true;
             dependencyList.add(d);
         }
         if(langExtension.equals("kt"))
@@ -513,13 +552,17 @@ public class AppController implements Initializable {
         plugin.setArtifactId("spring-boot-maven-plugin");
         if(lombok)
         {
-            List<Exclusion> exclusions=new ArrayList<>();
-            Exclusion exclusion = new Exclusion();
-            exclusion.setGroupId("org.projectlombok");
-            exclusion.setArtifactId("lombok");
-            exclusions.add(exclusion);
+            Xpp3Dom exclusions=new Xpp3Dom("excludes");
+            Xpp3Dom exclusion = new Xpp3Dom("exclude");
+            Xpp3Dom groupId=new Xpp3Dom("groupId");
+            groupId.setValue("org.projectlombok");
+            Xpp3Dom artifactId=new Xpp3Dom("artifactId");
+            artifactId.setValue("lombok");
+            exclusion.addChild(groupId);
+            exclusion.addChild(artifactId);
+            exclusions.addChild(exclusion);
             Xpp3Dom config = new Xpp3Dom("configuration");
-            config.addChild((Xpp3Dom) exclusions);
+            config.addChild(exclusions);
             plugin.setConfiguration(config);
         }
         pluginList.add(plugin);
@@ -675,7 +718,7 @@ public class AppController implements Initializable {
         if(!dependencyVersionField.getText().equals(""))
             dependency.setVersion(dependencyVersionField.getText());
         if(dependencyOptionalCombobox.getValue()!=null)
-            dependency.setOptional((Boolean) dependencyOptionalCombobox.getValue());
+            dependency.setOptional(dependencyOptionalCombobox.getValue());
         if(dependencyScopeCombobox.getValue()!=null)
             dependency.setScope(dependencyScopeCombobox.getValue());
         if(!dependencyTypeField.getText().equals(""))
@@ -691,12 +734,6 @@ public class AppController implements Initializable {
     }
     public void OK_Domain(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
-            if(this.DatabaseType.getValue()==null || this.DatabaseType.getValue().equals("None"))
-            {
-                showMessageDialog(null, "Nu este selectat niciun tip de bază de date!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
-                returnToMain();
-                return;
-            }
             if (DomainField.getText().equals("")) {
                 showMessageDialog(null, "Domeniul nu are nume!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
                 return;
@@ -709,12 +746,6 @@ public class AppController implements Initializable {
         }
         else
         {
-            if(this.DatabaseType.getValue()==null || this.DatabaseType.getValue().equals("None"))
-            {
-                showMessageDialog(null, "No Database type selected!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
-                returnToMain();
-                return;
-            }
             if (DomainField.getText().equals("")) {
                 showMessageDialog(null, "The Domain has no name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
                 return;
@@ -727,7 +758,7 @@ public class AppController implements Initializable {
         }
         Domain domain = new Domain(DomainField.getText(),new ArrayList<>(domainFieldTable.getItems()));
         if(relationCombobox.getValue()!=null) {
-            Domain domain2 = (Domain) relationCombobox.getValue();
+            Domain domain2 = relationCombobox.getValue();
             if(!RelationField.getText().equals("") && this.DatabaseType.getValue().equals("MySQL")) {
                 ArrayList<Pair<String, String>> fields = new ArrayList<Pair<String, String>>();
                 Pair<String, String> pair1 = domain.getFields().get(0);
@@ -743,7 +774,7 @@ public class AppController implements Initializable {
                 this.DomainList.getItems().add(relation);
                 this.domainCombobox.getItems().add(relation);
             }
-            else if(this.DatabaseType.getValue().equals("Mongo")){
+            else if(this.DatabaseType.getValue().equals("MongoDB")){
                 domain = new Domain(DomainField.getText(),new ArrayList<>(domainFieldTable.getItems()),domain2);
             }
         }
@@ -806,21 +837,11 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "Serviciul nu are nume!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
-            if (serviceRepositoryList.getItems().size()==0)
-            {
-                showMessageDialog(null, "Serviciul n-are repozitorii!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
         }
         else
         {
             if (ServiceField.getText().equals("")) {
                 showMessageDialog(null, "The Service has no name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-            if (serviceRepositoryList.getItems().size()==0)
-            {
-                showMessageDialog(null, "The Service has no repositories!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
         }
@@ -843,21 +864,11 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "Controller-ul nu are nume!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
-            if (controllerServiceList.getItems().size()==0)
-            {
-                showMessageDialog(null, "Controller-ul n-are servicii!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
         }
         else
         {
             if (ControllerField.getText().equals("")) {
                 showMessageDialog(null, "The Controller has no name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
-                return;
-            }
-            if (controllerServiceList.getItems().size()==0)
-            {
-                showMessageDialog(null, "The Controller has no services!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
                 return;
             }
         }
@@ -895,7 +906,7 @@ public class AppController implements Initializable {
                 return;
             }
         }
-        Pair<String, String> p = new Pair<String,String>(fieldTextField.getText(),typeCombobox.getValue().toString());
+        Pair<String, String> p = new Pair<String,String>(fieldTextField.getText(),typeCombobox.getValue());
         for (Pair<String, String> pair : domainFieldTable.getItems())
         {
             if(pair.getKey().equals(p.getKey()))
@@ -930,6 +941,7 @@ public class AppController implements Initializable {
                 dependencyScopeCombobox.setValue(dependency.getScope());
             if(dependency.getVersion()!=null)
                 dependencyVersionField.setText(dependency.getVersion());
+            dependencyOptionalCombobox.setValue(dependency.isOptional());
         }
     }
 
@@ -995,12 +1007,29 @@ public class AppController implements Initializable {
     }
 
     public void onDatabaseTypeChanged(ActionEvent actionEvent) {
+
+        this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MySQL"));
+        this.addDomainButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
+        this.addRepositoryButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
+
         this.DomainList.getItems().clear();
         this.domainCombobox.getItems().clear();
         this.relationCombobox.getItems().clear();
         this.RepositoriesList.getItems().clear();
         this.repositoryCombobox.getItems().clear();
-        this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MySQL"));
+
+        if(!ServicesList.getItems().isEmpty())
+        {
+            for(int i=0;i<ServicesList.getItems().size();i++)
+            {
+                Service oldS =ServicesList.getItems().get(i);
+                Service newS =new Service(ServicesList.getItems().get(i).getName());
+                ServicesList.getItems().remove(oldS);
+                controllerServiceList.getItems().remove(oldS);
+                ServicesList.getItems().add(i,newS);
+                controllerServiceList.getItems().add(i,newS);
+            }
+        }
     }
 
     public void onEnglishClick(MouseEvent mouseEvent) {

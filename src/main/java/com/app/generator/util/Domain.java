@@ -54,7 +54,26 @@ public class Domain {
 
     public void write(String domainsURI,String lang,boolean isJakarta,boolean lombok,String database) throws IOException {
         String[] parts=domainsURI.split("\\\\");
-        String pckg=parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+"."+parts[parts.length-1];
+        boolean langFolderFound=false;
+        StringBuilder packageBuilder = new StringBuilder();
+        for(String s : parts)
+        {
+            if(langFolderFound)
+            {
+                packageBuilder.append(s+='.');
+            }
+            if(lang.equals("kt"))
+            {
+                if (s.equals("kotlin"))
+                    langFolderFound=true;
+            }
+            else {
+                if (s.equals("java"))
+                    langFolderFound=true;
+            }
+        }
+        packageBuilder.deleteCharAt(packageBuilder.length()-1);//eliminam ultimul punct
+        String pckg=packageBuilder.toString();
         String persistence="javax";
         if(isJakarta)
             persistence="jakarta";
@@ -66,19 +85,25 @@ public class Domain {
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*");
             picoWriter.writeln("import java.io.Serializable");
-            picoWriter.writeln("import org.springframework.hateoas.RepresentationModel");
-            picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document");
-            picoWriter.writeln("import "+persistence+".persistence.*");
+            if(database.equals("MySQL")) {
+                picoWriter.writeln("import org.springframework.hateoas.RepresentationModel");
+                picoWriter.writeln("import "+persistence+".persistence.*");
+            }
+            else {
+                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document");
+                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.DocumentReference");
+            }
             picoWriter.writeln("import "+persistence+".validation.constraints.*");
             picoWriter.writeln("");
-            picoWriter.writeln("@Entity");
-            if(database.equals("MySQL"))
-                picoWriter.writeln("@Table(name = \""+this.name.toUpperCase()+"\")");
+            if(database.equals("MySQL")) {
+                picoWriter.writeln("@Entity");
+                picoWriter.writeln("@Table(name = \"" + this.name.toUpperCase() + "\")");
+            }
             else
                 picoWriter.writeln("@Document(collection = \""+this.name+"\")");
             if(isRelation())
             {
-                picoWriter.writeln("@IdClass("+StringUtils.capitalize(this.name)+"Id.class)");
+                picoWriter.writeln("@IdClass("+StringUtils.capitalize(this.name)+"Id::class)");
                 picoWriter.writeln_r("class "+StringUtils.capitalize(this.name)+" : Serializable{");
                 for(Pair<String,String> field:fields)
                 {
@@ -121,8 +146,14 @@ public class Domain {
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*;");
             picoWriter.writeln("import java.io.Serializable;");
-            picoWriter.writeln("import org.springframework.hateoas.RepresentationModel;");
-            picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document;");
+            if(database.equals("MySQL")) {
+                picoWriter.writeln("import org.springframework.hateoas.RepresentationModel;");
+                picoWriter.writeln("import "+persistence+".persistence.*");
+            }
+            else {
+                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document;");
+                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.DocumentReference;");
+            }
             picoWriter.writeln("import "+persistence+".persistence.*;");
             picoWriter.writeln("import "+persistence+".validation.constraints.*;");
             picoWriter.writeln("");
@@ -131,9 +162,10 @@ public class Domain {
                 picoWriter.writeln("");
                 picoWriter.writeln("@Data");
             }
-            picoWriter.writeln("@Entity");
-            if(database.equals("MySQL"))
-                picoWriter.writeln("@Table(name = \""+this.name.toUpperCase()+"\")");
+            if(database.equals("MySQL")) {
+                picoWriter.writeln("@Entity");
+                picoWriter.writeln("@Table(name = \"" + this.name.toUpperCase() + "\")");
+            }
             else
                 picoWriter.writeln("@Document(collection = \""+this.name+"\")");
             if(isRelation())

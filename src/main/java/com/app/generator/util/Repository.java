@@ -4,6 +4,7 @@ import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
+import java.util.*;
 
 public class Repository {
     private final String name;
@@ -21,6 +22,7 @@ public class Repository {
     public String getName() {
         return name;
     }
+
     @Override
     public String toString()
     {
@@ -28,7 +30,29 @@ public class Repository {
     }
     public void write(String repositoriesURI,String lang,String database) throws IOException {
         String[] parts=repositoriesURI.split("\\\\");
-        String pckg=parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+"."+parts[parts.length-1];
+        boolean langFolderFound=false;
+        StringBuilder packageBuilder = new StringBuilder();
+        for(String s : parts)
+        {
+            if(langFolderFound)
+            {
+                packageBuilder.append(s+='.');
+            }
+            if(lang.equals("kt"))
+            {
+                if (s.equals("kotlin"))
+                    langFolderFound=true;
+            }
+            else {
+                if (s.equals("java"))
+                    langFolderFound=true;
+            }
+        }
+        packageBuilder.deleteCharAt(packageBuilder.length()-1);
+        String pckg=packageBuilder.toString();
+        List<String> packageparts=new ArrayList<>(Arrays.asList(pckg.split("\\.")));
+        packageparts.remove(packageparts.size()-1);//eliminam termenul de repositories
+        String GroupAndArtefact=String.join(".",packageparts);
         PicoWriter picoWriter=new PicoWriter();
         File f=new File(repositoriesURI+"\\"+StringUtils.capitalize(this.name)+"."+lang);
         if(lang.equals("kt"))
@@ -36,32 +60,32 @@ public class Repository {
             picoWriter.writeln("package "+pckg);
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*");
-            picoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".domains.*");
+            picoWriter.writeln("import "+GroupAndArtefact+".domains.*");
             if(database.equals("MySQL")){
                 picoWriter.writeln("import org.springframework.data.jpa.repository.JpaRepository");
                 picoWriter.writeln_r("interface "+ StringUtils.capitalize(this.name)+
-                        " : JpaRepository<"+this.domain.getName()+","+this.domain.getFields().get(0).getValue()+"> {");
+                        " : JpaRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
             }
             else{
                 picoWriter.writeln("import org.springframework.data.mongodb.repository.MongoRepository");
                 picoWriter.writeln_r("interface "+ StringUtils.capitalize(this.name)+
-                        " : MongoRepository<"+this.domain.getName()+","+this.domain.getFields().get(0).getValue()+"> {");
+                        " : MongoRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
             }
         }
         else{
             picoWriter.writeln("package "+pckg+";");
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*;");
-            picoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".domains.*;");
+            picoWriter.writeln("import "+GroupAndArtefact+".domains.*;");
             if(database.equals("MySQL")){
                 picoWriter.writeln("import org.springframework.data.jpa.repository.JpaRepository;");
                 picoWriter.writeln_r("public interface "+ StringUtils.capitalize(this.name)+
-                        " extends JpaRepository<"+this.domain.getName()+","+this.domain.getFields().get(0).getValue()+"> {");
+                        " extends JpaRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
             }
             else{
                 picoWriter.writeln("import org.springframework.data.mongodb.repository.MongoRepository;");
                 picoWriter.writeln_r("public interface "+ StringUtils.capitalize(this.name)+
-                        " extends MongoRepository<"+this.domain.getName()+","+this.domain.getFields().get(0).getValue()+"> {");
+                        " extends MongoRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
             }
         }
         picoWriter.writeln_l("}");

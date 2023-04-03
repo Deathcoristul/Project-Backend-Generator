@@ -4,15 +4,19 @@ import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.*;
-import java.util.ArrayList;
+import java.util.*;
 
 public class Service {
     private final String name;
-    private final ArrayList<Repository> repositories;
+    private ArrayList<Repository> repositories=new ArrayList<>();
 
     public Service(String name, ArrayList<Repository> repositories) {
         this.name = name;
         this.repositories = repositories;
+    }
+
+    public Service(String name) {
+        this.name = name;
     }
 
     public ArrayList<Repository> getRepositories() {
@@ -22,6 +26,7 @@ public class Service {
     public String getName() {
         return name;
     }
+
     @Override
     public String toString()
     {
@@ -29,7 +34,30 @@ public class Service {
     }
     public void write(String servicesURI,String lang) throws IOException {
         String[] parts=servicesURI.split("\\\\");
-        String pckg=parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+"."+parts[parts.length-1];
+        boolean langFolderFound=false;
+        StringBuilder packageBuilder = new StringBuilder();
+        for(String s : parts)
+        {
+            if(langFolderFound)
+            {
+                packageBuilder.append(s+='.');
+            }
+            if(lang.equals("kt"))
+            {
+                if (s.equals("kotlin"))
+                    langFolderFound=true;
+            }
+            else {
+                if (s.equals("java"))
+                    langFolderFound=true;
+            }
+        }
+        packageBuilder.deleteCharAt(packageBuilder.length()-1);
+        String pckg=packageBuilder.toString();
+        List<String> packageparts=new ArrayList<>(Arrays.asList(pckg.split("\\.")));
+        packageparts.remove(packageparts.size()-1);
+        String GroupAndArtefact=String.join(".",packageparts);
+
         PicoWriter interfacepicoWriter=new PicoWriter();
         PicoWriter classpicoWriter =new PicoWriter();
         File f=new File(servicesURI+"\\"+StringUtils.capitalize(this.name)+"."+lang);
@@ -39,16 +67,18 @@ public class Service {
             classpicoWriter.writeln("");
             classpicoWriter.writeln("import org.springframework.stereotype.Service");
             classpicoWriter.writeln("import org.springframework.beans.factory.annotation.Autowired");
-            classpicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".domains.*");
-            classpicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".repositories.*");
+            classpicoWriter.writeln("import "+GroupAndArtefact+".domains.*");
+            classpicoWriter.writeln("import "+GroupAndArtefact+".repositories.*");
             classpicoWriter.writeln("");
             classpicoWriter.writeln("@Service");
             classpicoWriter.writeln_r("class "+ StringUtils.capitalize(this.name)+": I"+StringUtils.capitalize(this.name)+" {");
-            for(Repository repository : repositories)
-            {
-                classpicoWriter.writeln("@Autowired");
-                classpicoWriter.writeln("private lateinit var "+repository.getName()+": "+StringUtils.capitalize(repository.getName()));
-                classpicoWriter.writeln("");
+            if(!repositories.isEmpty()) {
+                for(Repository repository : repositories)
+                {
+                    classpicoWriter.writeln("@Autowired");
+                    classpicoWriter.writeln("private lateinit var "+repository.getName().toLowerCase()+": "+StringUtils.capitalize(repository.getName()));
+                    classpicoWriter.writeln("");
+                }
             }
         }
         else{
@@ -56,37 +86,38 @@ public class Service {
             classpicoWriter.writeln("");
             classpicoWriter.writeln("import org.springframework.stereotype.Service;");
             classpicoWriter.writeln("import org.springframework.beans.factory.annotation.Autowired;");
-            classpicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".domains.*;");
-            classpicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".repositories.*;");
+            classpicoWriter.writeln("import "+GroupAndArtefact+".domains.*;");
+            classpicoWriter.writeln("import "+GroupAndArtefact+".repositories.*;");
             classpicoWriter.writeln("");
             classpicoWriter.writeln("@Service");
             classpicoWriter.writeln_r("public class "+StringUtils.capitalize(this.name)+" implements I"+StringUtils.capitalize(this.name)+" {");
-            for(Repository repository : repositories)
-            {
-                classpicoWriter.writeln("@Autowired");
-                classpicoWriter.writeln(StringUtils.capitalize(repository.getName())+" "+repository.getName()+";");
-                classpicoWriter.writeln("");
+            if(!repositories.isEmpty()) {
+                for (Repository repository : repositories) {
+                    classpicoWriter.writeln("@Autowired");
+                    classpicoWriter.writeln(StringUtils.capitalize(repository.getName()) + " " + repository.getName().toLowerCase() + ";");
+                    classpicoWriter.writeln("");
+                }
             }
         }
         classpicoWriter.writeln_l("}");
         BufferedWriter fileWriter=new BufferedWriter(new FileWriter(f));
         fileWriter.write(classpicoWriter.toString());
         fileWriter.close();
-        f=new File(servicesURI+"\\I"+name+"."+lang);
+        f=new File(servicesURI+"\\I"+StringUtils.capitalize(this.name)+"."+lang);
         if(lang.equals("kt"))
         {
             interfacepicoWriter.writeln("package "+pckg);
             interfacepicoWriter.writeln("");
-            interfacepicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".domains.*");
-            interfacepicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".repositories.*");
+            interfacepicoWriter.writeln("import "+GroupAndArtefact+".domains.*");
+            interfacepicoWriter.writeln("import "+GroupAndArtefact+".repositories.*");
             interfacepicoWriter.writeln("");
             interfacepicoWriter.writeln_r("interface I"+ StringUtils.capitalize(this.name)+" {");
         }
         else{
             interfacepicoWriter.writeln("package "+pckg+";");
             interfacepicoWriter.writeln("");
-            interfacepicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".domains.*;");
-            interfacepicoWriter.writeln("import "+parts[parts.length-4]+"."+parts[parts.length-3]+"."+parts[parts.length-2]+".repositories.*;");
+            interfacepicoWriter.writeln("import "+GroupAndArtefact+".domains.*;");
+            interfacepicoWriter.writeln("import "+GroupAndArtefact+".repositories.*;");
             interfacepicoWriter.writeln("");
             interfacepicoWriter.writeln_r("public interface I"+StringUtils.capitalize(this.name)+" {");
         }
