@@ -92,6 +92,7 @@ public class Domain {
             else {
                 picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document");
                 picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.DocumentReference");
+                picoWriter.writeln("import org.springframework.data.annotation.Id");
             }
             picoWriter.writeln("import "+persistence+".validation.constraints.*");
             picoWriter.writeln("");
@@ -148,13 +149,13 @@ public class Domain {
             picoWriter.writeln("import java.io.Serializable;");
             if(database.equals("MySQL")) {
                 picoWriter.writeln("import org.springframework.hateoas.RepresentationModel;");
-                picoWriter.writeln("import "+persistence+".persistence.*");
+                picoWriter.writeln("import "+persistence+".persistence.*;");
             }
             else {
                 picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document;");
                 picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.DocumentReference;");
+                picoWriter.writeln("import org.springframework.data.annotation.Id;");
             }
-            picoWriter.writeln("import "+persistence+".persistence.*;");
             picoWriter.writeln("import "+persistence+".validation.constraints.*;");
             picoWriter.writeln("");
             if(lombok) {

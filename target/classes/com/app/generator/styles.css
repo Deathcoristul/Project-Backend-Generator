@@ -24,7 +24,9 @@ ComboBox:hover{
 }
 ComboBox:pressed{
     -fx-background-color: rgb(1, 45, 1)
-
+}
+ComboBox:hover > .list-cell {
+    -fx-text-fill: white;
 }
 .combo-box-popup .list-view .list-cell:hover {
     -fx-text-fill: rgb(0, 255, 0);
@@ -51,7 +53,12 @@ ListView .list-cell:pressed{
 .menu-item .label {
   -fx-text-fill: black;
 }
-
+.menu-item:focused {
+  -fx-background-color: green;
+}
+.menu-item:pressed {
+  -fx-background-color: black;
+}
 .menu-item:focused .label {
   -fx-text-fill: rgb(0, 255, 0);
 }

@@ -7,7 +7,7 @@
 <?import javafx.scene.text.*?>
 
 <AnchorPane fx:id="mainAnchorPane" prefHeight="650.0" prefWidth="684.0" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/11.0.2" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.generator.AppController">
-   <Label fx:id="TitleLabel" alignment="CENTER" prefHeight="60.0" prefWidth="684.0" style="-fx-background-color: #0f5401;" text="Project Generator" textAlignment="CENTER" textOverrun="CLIP" wrapText="true">
+   <Label alignment="CENTER" prefHeight="60.0" prefWidth="684.0" style="-fx-background-color: #0f5401;" text="Project Generator" textAlignment="CENTER" textOverrun="CLIP" wrapText="true">
       <font>
          <Font name="Bauhaus 93" size="46.0" />
       </font>
@@ -132,7 +132,7 @@
    <ImageView fx:id="romaniaButton" fitHeight="26.0" fitWidth="48.0" layoutX="631.0" layoutY="30.0" onMouseClicked="#onRomanianClick" pickOnBounds="true">
       <Image url="@ro.png" />
    </ImageView>
-   <AnchorPane fx:id="domainAnchorPane" disable="true" layoutX="255.0" layoutY="106.0" prefHeight="380.0" prefWidth="254.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+   <AnchorPane fx:id="domainAnchorPane" disable="true" layoutX="221.0" layoutY="151.0" prefHeight="380.0" prefWidth="254.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
       <children>
          <Button fx:id="domainCancelButton" layoutX="159.0" layoutY="338.0" minWidth="-Infinity" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
          <Button layoutX="26.0" layoutY="338.0" mnemonicParsing="false" onAction="#OK_Domain" text="OK" />
@@ -157,17 +157,17 @@
          <ComboBox fx:id="relationCombobox" layoutX="26.0" layoutY="294.0" prefHeight="26.0" prefWidth="202.0" promptText="Relație" />
       </children>
    </AnchorPane>
-   <AnchorPane fx:id="repositoryAnchorPane" disable="true" layoutX="281.0" layoutY="152.0" prefHeight="159.0" prefWidth="170.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+   <AnchorPane fx:id="repositoryAnchorPane" disable="true" layoutX="262.0" layoutY="261.0" prefHeight="159.0" prefWidth="170.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
       <children>
-         <Button fx:id="repositoryCancelButton" layoutX="86.0" layoutY="108.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
+         <Button fx:id="repositoryCancelButton" layoutX="86.0" layoutY="108.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
          <Button layoutX="26.0" layoutY="108.0" mnemonicParsing="false" onAction="#OK_Repository" text="OK" />
          <TextField fx:id="RepositoryField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="126.0" promptText="Nume repositoriu" stylesheets="@styles.css" />
          <ComboBox fx:id="domainCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="126.0" promptText="Domeniu" />
       </children>
    </AnchorPane>
-   <AnchorPane fx:id="serviceAnchorPane" disable="true" layoutX="256.0" layoutY="178.0" prefHeight="243.0" prefWidth="289.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+   <AnchorPane fx:id="serviceAnchorPane" disable="true" layoutX="202.0" layoutY="219.0" prefHeight="243.0" prefWidth="289.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
       <children>
-         <Button fx:id="serviceCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
+         <Button fx:id="serviceCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
          <Button layoutX="26.0" layoutY="203.0" mnemonicParsing="false" onAction="#OK_Service" text="OK" />
          <TextField fx:id="ServiceField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume serviciu" stylesheets="@styles.css" />
          <ComboBox fx:id="repositoryCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="109.0" promptText="Repositoriu" />
@@ -183,9 +183,9 @@
          </ListView>
       </children>
    </AnchorPane>
-   <AnchorPane fx:id="controllerAnchorPane" disable="true" layoutX="266.0" layoutY="188.0" prefHeight="243.0" prefWidth="289.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+   <AnchorPane fx:id="controllerAnchorPane" disable="true" layoutX="203.0" layoutY="205.0" prefHeight="243.0" prefWidth="289.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
       <children>
-         <Button fx:id="controllerCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
+         <Button fx:id="controllerCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
          <Button layoutX="26.0" layoutY="203.0" mnemonicParsing="false" onAction="#OK_Controller" text="OK" />
          <TextField fx:id="ControllerField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume controller" stylesheets="@styles.css" />
          <ComboBox fx:id="serviceCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="102.0" promptText="Serviciu" />
@@ -201,16 +201,19 @@
          </ListView>
       </children>
    </AnchorPane>
-   <AnchorPane fx:id="dependencyAnchorPane" disable="true" layoutX="265.0" layoutY="116.0" prefHeight="302.0" prefWidth="254.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+   <AnchorPane fx:id="dependencyAnchorPane" disable="true" layoutX="96.0" layoutY="93.0" prefHeight="436.0" prefWidth="492.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
       <children>
-         <Button fx:id="dependencyCancelButton" layoutX="159.0" layoutY="254.0" minWidth="-Infinity" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
-         <Button fx:id="dependencyOKButton" layoutX="26.0" layoutY="254.0" mnemonicParsing="false" onAction="#OK_Dependency" text="OK" />
+         <Button fx:id="dependencyCancelButton" layoutX="399.0" layoutY="394.0" minWidth="-Infinity" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
+         <Button fx:id="dependencyOKButton" layoutX="26.0" layoutY="394.0" mnemonicParsing="false" onAction="#OK_Dependency" text="OK" />
          <TextField fx:id="dependencyGroupField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Grup" stylesheets="@styles.css" />
          <TextField fx:id="dependencyArtifactField" layoutX="26.0" layoutY="54.0" prefHeight="26.0" prefWidth="202.0" promptText="Artefact" />
-         <ComboBox fx:id="dependencyOptionalCombobox" layoutX="26.0" layoutY="134.0" prefHeight="26.0" prefWidth="202.0" promptText="Optional" />
-         <TextField fx:id="dependencyTypeField" layoutX="26.0" layoutY="214.0" prefHeight="26.0" prefWidth="202.0" promptText="Tip" />
-         <ComboBox fx:id="dependencyScopeCombobox" layoutX="26.0" layoutY="174.0" prefHeight="26.0" prefWidth="202.0" promptText="Scop" />
+         <ComboBox fx:id="dependencyOptionalCombobox" layoutX="264.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Optional" />
+         <TextField fx:id="dependencyTypeField" layoutX="264.0" layoutY="94.0" prefHeight="26.0" prefWidth="202.0" promptText="Tip" />
+         <ComboBox fx:id="dependencyScopeCombobox" layoutX="264.0" layoutY="54.0" prefHeight="26.0" prefWidth="202.0" promptText="Scop" />
          <TextField fx:id="dependencyVersionField" layoutX="26.0" layoutY="94.0" prefHeight="26.0" prefWidth="202.0" promptText="Versiune" />
+         <TextField fx:id="searchBar" layoutX="26.0" layoutY="156.0" onAction="#onFinishedSearch" prefHeight="26.0" prefWidth="440.0" promptText="Caută dependința" />
+         <Separator layoutX="26.0" layoutY="137.0" prefHeight="1.0" prefWidth="440.0" />
+         <ListView fx:id="dependencySearchListView" layoutX="26.0" layoutY="196.0" onMouseClicked="#onSelectDependency" prefHeight="180.0" prefWidth="440.0" />
       </children>
    </AnchorPane>
 </AnchorPane>

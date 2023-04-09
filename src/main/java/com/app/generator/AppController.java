@@ -2,7 +2,9 @@ package com.app.generator;
 
 import com.app.generator.util.*;
 import com.app.generator.util.Repository;
-import io.spring.initializr.generator.buildsystem.gradle.GradleBuild;
+
+import io.spring.initializr.generator.buildsystem.gradle.*;
+import io.spring.initializr.generator.io.IndentingWriter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
@@ -19,13 +21,15 @@ import org.ainslec.picocog.*;
 import javax.swing.*;
 import java.io.*;
 
+import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.*;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
-import io.spring.initializr.generator.buildsystem.gradle.GradleBuildWriter;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.json.*;
 
 import static javax.swing.JOptionPane.showMessageDialog;
 
@@ -110,6 +114,8 @@ public class AppController implements Initializable {
     public TextField dependencyTypeField;
     public ComboBox<String> dependencyScopeCombobox;
     public TextField dependencyVersionField;
+    public TextField searchBar;
+    public ListView<JSONObject> dependencySearchListView;
 
     private String locationURI;
     private String language;
@@ -133,6 +139,83 @@ public class AppController implements Initializable {
         this.columnType.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue()));
         this.domainFieldTable.setPlaceholder(new Label(""));
         this.language="ro";
+        this.dependencyOptionalCombobox.setButtonCell(new ListCell<>() {//listener-e pentru a reveni la textul prompt al combobox-ului
+            @Override
+            protected void updateItem(Boolean item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(this.getText());
+                } else {
+                    setText(String.valueOf(item));
+                }
+            }
+        });
+        this.dependencyScopeCombobox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(this.getText());
+                } else {
+                    setText(item);
+                }
+            }
+        });
+        this.typeCombobox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(this.getText());
+                } else {
+                    setText(item);
+                }
+            }
+        });
+        this.relationCombobox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Domain item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(this.getText());
+                } else {
+                    setText(item.getName());
+                }
+            }
+        });
+        this.domainCombobox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Domain item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(this.getText());
+                } else {
+                    setText(item.getName());
+                }
+            }
+        });
+        this.repositoryCombobox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Repository item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(this.getText());
+                } else {
+                    setText(item.getName());
+                }
+            }
+        });
+        this.serviceCombobox.setButtonCell(new ListCell<>() {
+            @Override
+            protected void updateItem(Service item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(this.getText());
+                } else {
+                    setText(item.getName());
+                }
+            }
+        });
     }
     public void onAddDependency() {
         popUp(dependencyAnchorPane);
@@ -164,65 +247,65 @@ public class AppController implements Initializable {
     public void onGenerate() {
         if(this.language.equals("ro")) {
             if (this.ProjectManager.getValue() == null) {
-                showMessageDialog(null, "Proiectul nu are gestionator setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Proiectul nu are gestionator setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.SpringBootVersion.getValue() == null) {
-                showMessageDialog(null, "Proiectul nu are versiune de Spring setată!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Proiectul nu are versiune de Spring setată!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.PackageType.getValue() == null) {
-                showMessageDialog(null, "Proiectul nu are tipul de împachetare setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Proiectul nu are tipul de împachetare setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.JavaVersion.getValue() == null) {
-                showMessageDialog(null, "Proiectul nu are versiune de mașină virtuală Java setată!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Proiectul nu are versiune de mașină virtuală Java setată!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.Language.getValue() == null) {
-                showMessageDialog(null, "Proiectul nu are limbajul setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Proiectul nu are limbajul setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if(this.DatabaseType.getValue()!=null && this.DatabaseLink.getText().equals("") && !this.DatabaseType.getValue().equals("None") )
             {
-                showMessageDialog(null, "Proiectul cu tipul de bază de date setat nu are link aceasta!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Proiectul cu tipul de bază de date setat nu are link aceasta!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if(this.SpringBootVersion.getValue().startsWith("3") && this.JavaVersion.getValue()<17)
             {
-                showMessageDialog(null, "Pentru versiunea "+this.SpringBootVersion.getValue()+" utilizați o versiune Java de minim 17!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Pentru versiunea "+this.SpringBootVersion.getValue()+" utilizați o versiune Java de minim 17!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else{
             if (this.ProjectManager.getValue() == null) {
-                showMessageDialog(null, "The project has no manager set!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The project has no manager set!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.SpringBootVersion.getValue() == null) {
-                showMessageDialog(null, "The project has no Spring version set!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The project has no Spring version set!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.PackageType.getValue() == null) {
-                showMessageDialog(null, "The project has no packaging type set!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The project has no packaging type set!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.JavaVersion.getValue() == null) {
-                showMessageDialog(null, "The project has no Java Virtual Machine version set!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The project has no Java Virtual Machine version set!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.Language.getValue() == null) {
-                showMessageDialog(null, "The project does not have the language set!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The project does not have the language set!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if(this.DatabaseLink.getText().equals("") && !this.DatabaseType.getValue().equals("None") && this.DatabaseType.getValue()!=null)
             {
-                showMessageDialog(null, "The project has not a link for the database set!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The project has not a link for the database set!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if(this.SpringBootVersion.getValue().startsWith("3") && this.JavaVersion.getValue()<17)
             {
-                showMessageDialog(null, "For Spring Boot Version "+this.SpringBootVersion.getValue()+", you must use a Java version at least 17!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "For Spring Boot Version "+this.SpringBootVersion.getValue()+", you must use a Java version at least 17!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -258,9 +341,9 @@ public class AppController implements Initializable {
                 buildMainFiles();
                 buildTestFiles();
                 if(this.language.equals("ro"))
-                    showMessageDialog(null,"Proiectul s-a generat!","SUCCES", JOptionPane.INFORMATION_MESSAGE);
+                    showMessageDialog(null,"Proiectul s-a generat!","SUCCES", JOptionPane.WARNING_MESSAGE);
                 else
-                    showMessageDialog(null,"The project has been generated!","SUCCES", JOptionPane.INFORMATION_MESSAGE);
+                    showMessageDialog(null,"The project has been generated!","SUCCES", JOptionPane.WARNING_MESSAGE);
             }
         }
         catch (Exception ignored)
@@ -275,7 +358,13 @@ public class AppController implements Initializable {
     private void buildGradle() {
         //TODO Gradle
         GradleBuild build=new GradleBuild();
-        build.plugins().add("org.springframework.boot");
+        //Gradle
+        StandardGradlePlugin plugin=new StandardGradlePlugin("org.springframework.boot");
+        plugin.setVersion(this.SpringBootVersion.getValue());
+        build.properties().property("version","0.0.1-SNAPSHOT");
+        //IndentingWriter indentingWriter = new IndentingWriter();
+        GroovyDslGradleBuildWriter writer = new GroovyDslGradleBuildWriter();
+        //writer.writeTo(build,new File("build.gradle"));
         //build
     }
 
@@ -495,7 +584,13 @@ public class AppController implements Initializable {
         dependency.setArtifactId("spring-boot-starter-test");
         dependency.setScope("test");
         dependencyList.add(dependency);
-
+        if(!DatabaseType.getValue().equals("None"))
+        {
+            Dependency d=new Dependency();
+            d.setGroupId("org.springframework.boot");
+            d.setArtifactId("spring-boot-starter-validation");
+            dependencyList.add(d);
+        }
         if(DatabaseType.getValue().equals("MySQL"))
         {
             Dependency d=new Dependency();
@@ -505,10 +600,6 @@ public class AppController implements Initializable {
             d=new Dependency();
             d.setGroupId("org.springframework.boot");
             d.setArtifactId("spring-boot-starter-data-rest");
-            dependencyList.add(d);
-            d=new Dependency();
-            d.setGroupId("org.springframework.boot");
-            d.setArtifactId("spring-boot-starter-validation");
             dependencyList.add(d);
             d=new Dependency();
             d.setGroupId("org.mariadb.jdbc");
@@ -540,6 +631,17 @@ public class AppController implements Initializable {
             dependency=new Dependency();
             dependency.setGroupId("org.jetbrains.kotlin");
             dependency.setArtifactId("kotlin-stdlib-jdk8");
+            dependencyList.add(dependency);
+            dependency=new Dependency();
+            dependency.setGroupId("org.jetbrains.kotlin");
+            dependency.setArtifactId("kotlin-stdlib");
+            dependency.setVersion("${kotlin.version}");
+            dependencyList.add(dependency);
+            dependency=new Dependency();
+            dependency.setGroupId("org.jetbrains.kotlin");
+            dependency.setArtifactId("kotlin-test");
+            dependency.setVersion("${kotlin.version}");
+            dependency.setScope("test");
             dependencyList.add(dependency);
         }
         model.setDependencies(dependencyList);
@@ -600,7 +702,7 @@ public class AppController implements Initializable {
         model.setBuild(build);
         new MavenXpp3Writer().write(writer,model);
     }
-    public void onRemoveDependency(ActionEvent actionEvent) {
+    public void onRemoveDependency() {
         this.DependenciesList.getItems().remove(this.DependenciesList.getSelectionModel().getSelectedItem());
     }
 
@@ -669,6 +771,8 @@ public class AppController implements Initializable {
         controllerServiceList.getItems().clear();
         relationCombobox.getItems().clear();
         relationCombobox.setValue(null);
+        searchBar.clear();
+        dependencySearchListView.getItems().clear();
         mustEdit=false;
     }
     private void popUp(AnchorPane pane)
@@ -683,24 +787,24 @@ public class AppController implements Initializable {
     public void OK_Dependency(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
             if (dependencyGroupField.getText().equals("")) {
-                showMessageDialog(null, "Dependința nu are grupul setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Dependința nu are grupul setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (dependencyArtifactField.getText().equals(""))
             {
-                showMessageDialog(null, "Dependința nu are artefactul setat!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Dependința nu are artefactul setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
             if (dependencyGroupField.getText().equals("")) {
-                showMessageDialog(null, "The Dependency has no group!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Dependency has no group!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (dependencyArtifactField.getText().equals(""))
             {
-                showMessageDialog(null, "The Dependency has no artifact!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Dependency has no artifact!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -710,7 +814,7 @@ public class AppController implements Initializable {
                 if(this.getVersion()==null)
                     return this.getGroupId()+":"+this.getArtifactId();
                 else
-                    return this.getGroupId()+":"+this.getArtifactId()+this.getVersion();
+                    return this.getGroupId()+":"+this.getArtifactId()+":"+this.getVersion();
             }
         };
         dependency.setGroupId(dependencyGroupField.getText());
@@ -735,24 +839,24 @@ public class AppController implements Initializable {
     public void OK_Domain(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
             if (DomainField.getText().equals("")) {
-                showMessageDialog(null, "Domeniul nu are nume!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Domeniul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (domainFieldTable.getItems().size()==0)
             {
-                showMessageDialog(null, "Domeniul nu are niciun atribut!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Domeniul nu are niciun atribut!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
             if (DomainField.getText().equals("")) {
-                showMessageDialog(null, "The Domain has no name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Domain has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (domainFieldTable.getItems().size()==0)
             {
-                showMessageDialog(null, "The Domain has no fields!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Domain has no fields!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -796,24 +900,24 @@ public class AppController implements Initializable {
     public void OK_Repository(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
             if (RepositoryField.getText().equals("")) {
-                showMessageDialog(null, "Repozitoriul nu are nume!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Repozitoriul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (domainCombobox.getValue()==null)
             {
-                showMessageDialog(null, "Nu s-a selectat domeniul pentru repozitoriu!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Nu s-a selectat domeniul pentru repozitoriu!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
             if (RepositoryField.getText().equals("")) {
-                showMessageDialog(null, "The Repository has no name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Repository has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (domainCombobox.getValue()==null)
             {
-                showMessageDialog(null, "The Repository has no domain set!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Repository has no domain set!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -834,14 +938,14 @@ public class AppController implements Initializable {
     public void OK_Service(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
             if (ServiceField.getText().equals("")) {
-                showMessageDialog(null, "Serviciul nu are nume!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Serviciul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
             if (ServiceField.getText().equals("")) {
-                showMessageDialog(null, "The Service has no name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Service has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -861,14 +965,14 @@ public class AppController implements Initializable {
     public void OK_Controller(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
             if (ControllerField.getText().equals("")) {
-                showMessageDialog(null, "Controller-ul nu are nume!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Controller-ul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
             if (ControllerField.getText().equals("")) {
-                showMessageDialog(null, "The Controller has no name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "The Controller has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -885,24 +989,24 @@ public class AppController implements Initializable {
     public void onAddField(ActionEvent actionEvent) {
         if(this.language.equals("ro")) {
             if (typeCombobox.getValue() == null) {
-                showMessageDialog(null, "Nu ati setat tipul de data al atributului!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Nu ati setat tipul de data al atributului!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (fieldTextField.getText().equals(""))
             {
-                showMessageDialog(null, "Nu ati setat numele atributului!", "ATENȚIE", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "Nu ati setat numele atributului!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
             if (typeCombobox.getValue() == null) {
-                showMessageDialog(null, "You have not set the datatype of the attribute!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "You have not set the datatype of the attribute!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (fieldTextField.getText().equals(""))
             {
-                showMessageDialog(null, "You have not set the attribute name!", "WARNING", JOptionPane.INFORMATION_MESSAGE);
+                showMessageDialog(null, "You have not set the attribute name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -1097,6 +1201,7 @@ public class AppController implements Initializable {
         this.dependencyGroupField.setPromptText("Group");
         this.dependencyVersionField.setPromptText("Version");
         this.dependencyCancelButton.setText("Cancel");
+        this.searchBar.setPromptText("Search dependency");
     }
 
     public void onRomanianClick(MouseEvent mouseEvent) {
@@ -1164,5 +1269,55 @@ public class AppController implements Initializable {
         this.dependencyGroupField.setPromptText("Grup");
         this.dependencyVersionField.setPromptText("Versiune");
         this.dependencyCancelButton.setText("Anulează");
+        this.searchBar.setPromptText("Caută dependința");
+    }
+
+    public void onFinishedSearch(ActionEvent mouseEvent) {
+        dependencySearchListView.getItems().clear();
+        if(!searchBar.getText().equals("")) {
+            try {
+                URL url = new URL("https://search.maven.org/solrsearch/select?q=" + searchBar.getText()+"&rows=100");
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                if(connection.getResponseCode() == HttpURLConnection.HTTP_OK)
+                {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+                    StringBuilder json= new StringBuilder();
+                    int ch;
+                    while((ch= reader.read()) != -1)
+                        json.append((char)ch);
+                    JSONObject obj=new JSONObject(json.toString());
+                    JSONObject response=obj.getJSONObject("response");
+                    JSONArray array=response.getJSONArray("docs");
+                    for (int i=0;i<array.length();i++)
+                    {
+                        JSONObject dep=new JSONObject(){
+                            @Override
+                            public String toString(){
+                                if(this.getString("latestVersion")==null)
+                                    return this.getString("g")+":"+this.getString("a");
+                                else
+                                    return this.getString("g")+":"+this.getString("a")+":"+this.getString("latestVersion");
+                            }
+                        };
+                        for(String key : array.getJSONObject(i).keySet())
+                            dep.put(key,array.getJSONObject(i).get(key));
+                        dependencySearchListView.getItems().add(dep);
+                    }
+                }
+            } catch (Exception e) {
+                if(this.language.equals("ro"))
+                    showMessageDialog(null, "Nu s-a stabilit conexiunea!", "EROARE", JOptionPane.ERROR_MESSAGE);
+                else
+                    showMessageDialog(null, "No connection!", "ERROR", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    public void onSelectDependency(MouseEvent mouseEvent) {
+        JSONObject dep = dependencySearchListView.getSelectionModel().getSelectedItem();
+        this.dependencyGroupField.setText(dep.getString("g"));
+        this.dependencyArtifactField.setText(dep.getString("a"));
+        this.dependencyVersionField.setText(dep.getString("latestVersion"));
     }
 }
