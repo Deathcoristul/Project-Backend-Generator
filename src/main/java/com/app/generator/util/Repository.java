@@ -1,5 +1,6 @@
 package com.app.generator.util;
 
+import javafx.util.Pair;
 import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
 
@@ -36,7 +37,7 @@ public class Repository {
         {
             if(langFolderFound)
             {
-                packageBuilder.append(s+='.');
+                packageBuilder.append(s).append('.');
             }
             if(lang.equals("kt"))
             {
@@ -53,8 +54,11 @@ public class Repository {
         List<String> packageparts=new ArrayList<>(Arrays.asList(pckg.split("\\.")));
         packageparts.remove(packageparts.size()-1);//eliminam termenul de repositories
         String GroupAndArtefact=String.join(".",packageparts);
+        String nameCap=StringUtils.capitalize(this.name);
+        String domainNameCap =StringUtils.capitalize(this.domain.getName());
+        Pair<String,String> idField=this.domain.getFields().get(0);
         PicoWriter picoWriter=new PicoWriter();
-        File f=new File(repositoriesURI+"\\"+StringUtils.capitalize(this.name)+"."+lang);
+        File f=new File(repositoriesURI+"\\"+nameCap+"."+lang);
         if(lang.equals("kt"))
         {
             picoWriter.writeln("package "+pckg);
@@ -62,15 +66,18 @@ public class Repository {
             picoWriter.writeln("import java.util.*");
             picoWriter.writeln("import "+GroupAndArtefact+".domains.*");
             if(database.equals("MySQL")){
-                picoWriter.writeln("import org.springframework.data.jpa.repository.JpaRepository");
-                picoWriter.writeln_r("interface "+ StringUtils.capitalize(this.name)+
-                        " : JpaRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
+                picoWriter.writeln("import org.springframework.data.jpa.repository.*");
+                picoWriter.writeln_r("interface "+ nameCap+
+                        " : JpaRepository<"+domainNameCap+","+idField.getValue()+"> {");
+                picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1\",nativeQuery=true)");
             }
             else{
-                picoWriter.writeln("import org.springframework.data.mongodb.repository.MongoRepository");
-                picoWriter.writeln_r("interface "+ StringUtils.capitalize(this.name)+
-                        " : MongoRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
+                picoWriter.writeln("import org.springframework.data.mongodb.repository.*");
+                picoWriter.writeln_r("interface "+ nameCap+
+                        " : MongoRepository<"+domainNameCap+","+idField.getValue()+"> {");
+                picoWriter.writeln("@Query(\"{"+idField.getKey()+ ":'?0'" +"}\")");
             }
+            picoWriter.writeln("fun get"+domainNameCap+"ById(id : "+idField.getValue()+") : "+domainNameCap);
         }
         else{
             picoWriter.writeln("package "+pckg+";");
@@ -78,15 +85,18 @@ public class Repository {
             picoWriter.writeln("import java.util.*;");
             picoWriter.writeln("import "+GroupAndArtefact+".domains.*;");
             if(database.equals("MySQL")){
-                picoWriter.writeln("import org.springframework.data.jpa.repository.JpaRepository;");
-                picoWriter.writeln_r("public interface "+ StringUtils.capitalize(this.name)+
-                        " extends JpaRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
+                picoWriter.writeln("import org.springframework.data.jpa.repository.*;");
+                picoWriter.writeln_r("public interface "+ nameCap+
+                        " extends JpaRepository<"+domainNameCap+","+idField.getValue()+"> {");
+                picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1\",nativeQuery=true)");
             }
             else{
-                picoWriter.writeln("import org.springframework.data.mongodb.repository.MongoRepository;");
-                picoWriter.writeln_r("public interface "+ StringUtils.capitalize(this.name)+
-                        " extends MongoRepository<"+StringUtils.capitalize(this.domain.getName())+","+this.domain.getFields().get(0).getValue()+"> {");
+                picoWriter.writeln("import org.springframework.data.mongodb.repository.*;");
+                picoWriter.writeln_r("public interface "+ nameCap+
+                        " extends MongoRepository<"+domainNameCap+","+idField.getValue()+"> {");
+                picoWriter.writeln("@Query(\"{"+idField.getKey()+ ":'?0'" +"}\")");
             }
+            picoWriter.writeln(domainNameCap+" get"+domainNameCap+"ById("+idField.getValue()+" id)"+";");
         }
         picoWriter.writeln_l("}");
         BufferedWriter fileWriter=new BufferedWriter(new FileWriter(f));

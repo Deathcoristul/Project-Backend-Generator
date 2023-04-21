@@ -31,12 +31,12 @@
    <ComboBox fx:id="SpringBootVersion" layoutX="14.0" layoutY="143.0" prefHeight="26.0" prefWidth="162.0" promptText="Versiune Spring" stylesheets="@styles.css" />
    <ComboBox fx:id="ProjectManager" layoutX="14.0" layoutY="74.0" prefHeight="26.0" prefWidth="162.0" promptText="Gestionar de proiect" stylesheets="@styles.css" />
    <ComboBox fx:id="Language" layoutX="14.0" layoutY="108.0" prefHeight="26.0" prefWidth="161.0" promptText="Limbaj de programare" stylesheets="@styles.css" />
-   <TextField fx:id="ProjectName" layoutX="192.0" layoutY="74.0" promptText="Nume proiect" stylesheets="@styles.css" />
-   <TextField fx:id="Group" layoutX="353.0" layoutY="74.0" onKeyTyped="#onGroupOrArtifactTextChanged" promptText="Grup" stylesheets="@styles.css" />
+   <TextField fx:id="ProjectName" layoutX="353.0" layoutY="74.0" promptText="Nume proiect" stylesheets="@styles.css" />
+   <TextField fx:id="Group" layoutX="192.0" layoutY="74.0" onKeyTyped="#onGroupOrArtifactTextChanged" promptText="Grup" stylesheets="@styles.css" />
    <TextField fx:id="PackageName" layoutX="520.0" layoutY="74.0" prefHeight="26.0" prefWidth="150.0" promptText="Nume pachet" stylesheets="@styles.css" />
    <ComboBox fx:id="JavaVersion" layoutX="520.0" layoutY="108.0" prefWidth="150.0" promptText="Versiune Java" stylesheets="@styles.css" />
-   <TextField fx:id="Description" layoutX="192.0" layoutY="108.0" promptText="Descriere" stylesheets="@styles.css" />
-   <TextField fx:id="Artifact" layoutX="353.0" layoutY="108.0" onKeyTyped="#onGroupOrArtifactTextChanged" promptText="Artefact" stylesheets="@styles.css" />
+   <TextField fx:id="Description" layoutX="353.0" layoutY="108.0" promptText="Descriere" stylesheets="@styles.css" />
+   <TextField fx:id="Artifact" layoutX="192.0" layoutY="108.0" onKeyTyped="#onGroupOrArtifactTextChanged" promptText="Artefact" stylesheets="@styles.css" />
    <ComboBox fx:id="PackageType" layoutX="520.0" layoutY="143.0" prefWidth="150.0" promptText="Împachetare" stylesheets="@styles.css" />
    <Button fx:id="addDependencyButton" layoutX="193.0" layoutY="143.0" mnemonicParsing="false" onAction="#onAddDependency" prefHeight="27.0" prefWidth="310.0" stylesheets="@styles.css" text="Adaugă dependință" />
    <ListView fx:id="DependenciesList" layoutX="192.0" layoutY="198.0" prefHeight="119.0" prefWidth="310.0" stylesheets="@styles.css">

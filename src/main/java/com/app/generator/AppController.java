@@ -32,7 +32,7 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.json.*;
 
 import static javax.swing.JOptionPane.showMessageDialog;
-
+//TODO verificari erori la generare si care ar afecta runtime
 public class AppController implements Initializable {
     public AnchorPane mainAnchorPane;
     public AnchorPane domainAnchorPane;
@@ -346,8 +346,9 @@ public class AppController implements Initializable {
                     showMessageDialog(null,"The project has been generated!","SUCCES", JOptionPane.WARNING_MESSAGE);
             }
         }
-        catch (Exception ignored)
+        catch (Exception e)
         {
+            e.printStackTrace();
         }
         locationURI="";
         langExtension="";
@@ -434,7 +435,45 @@ public class AppController implements Initializable {
         BufferedWriter fileWriter=new BufferedWriter(new FileWriter(f));
         fileWriter.write(picoWriter.toString());
         fileWriter.close();
-
+        if(PackageType.getValue().equals("War"))//Daca impachetarea este War, trebuie Servlet
+        {
+            String servletName=StringUtils.capitalize(this.ProjectName.getText())+"ServletInitializer";
+            f=new File(tempURI+"\\"+servletName+"."+langExtension);
+            picoWriter=new PicoWriter();
+            picoWriter.writeln("package "+this.PackageName.getText()+endChar);
+            picoWriter.writeln("");
+            if(langExtension.equals("java"))
+            {
+                picoWriter.writeln("import org.springframework.boot.builder.SpringApplicationBuilder;");
+                picoWriter.writeln("import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;");
+                picoWriter.writeln("");
+                picoWriter.writeln_r("public class "+servletName+" extends extends SpringBootServletInitializer{");
+                picoWriter.writeln("@Override");
+                picoWriter.writeln_r("protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {");
+                picoWriter.writeln("return application.sources("+StringUtils.capitalize(this.ProjectName.getText())+".class);");
+            }
+            else{
+                picoWriter.writeln("import org.springframework.boot.builder.SpringApplicationBuilder");
+                picoWriter.writeln("import org.springframework.boot.web.servlet.support.SpringBootServletInitializer");
+                picoWriter.writeln("");
+                picoWriter.writeln_r("class "+servletName+": SpringBootServletInitializer() {");
+                picoWriter.writeln("");
+                picoWriter.writeln_r("override fun configure(application: SpringApplicationBuilder): SpringApplicationBuilder {");
+                picoWriter.writeln("return application.sources("+StringUtils.capitalize(this.ProjectName.getText())+"::class.java)");
+            }
+            picoWriter.writeln_l("}");
+            picoWriter.writeln_l("}");
+            if(!f.exists()) {
+                try {
+                    f.createNewFile();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            fileWriter=new BufferedWriter(new FileWriter(f));
+            fileWriter.write(picoWriter.toString());
+            fileWriter.close();
+        }
         if(!DatabaseType.getValue().equals("None")) {
             if (this.DomainList.getItems().size() != 0) {
                 String domainsURI = tempURI + "\\domains";
@@ -454,23 +493,23 @@ public class AppController implements Initializable {
                 for (Repository repository : RepositoriesList.getItems())
                     repository.write(repositoriesURI, langExtension, DatabaseType.getValue());
             }
-            if (this.ServicesList.getItems().size() != 0) {
-                String servicesURI = tempURI + "\\services";
-                f = new File(servicesURI);
-                if (!f.exists())
-                    f.mkdir();
-                for (Service service : ServicesList.getItems())
-                    service.write(servicesURI, langExtension);
+        }
+        if (this.ServicesList.getItems().size() != 0) {
+            String servicesURI = tempURI + "\\services";
+            f = new File(servicesURI);
+            if (!f.exists())
+                f.mkdir();
+            for (Service service : ServicesList.getItems())
+                service.write(servicesURI, langExtension);
+        }
+        if (this.ControllerList.getItems().size() != 0) {
+            String controllersURI = tempURI + "\\controllers";
+            f = new File(controllersURI);
+            if (!f.exists()) {
+                f.mkdir();
             }
-            if (this.ControllerList.getItems().size() != 0) {
-                String controllersURI = tempURI + "\\controllers";
-                f = new File(controllersURI);
-                if (!f.exists()) {
-                    f.mkdir();
-                }
-                for (Controller controller : ControllerList.getItems())
-                    controller.write(controllersURI, langExtension);
-            }
+            for (Controller controller : ControllerList.getItems())
+                controller.write(controllersURI, langExtension);
         }
     }
 
@@ -488,6 +527,8 @@ public class AppController implements Initializable {
                 picoWriter.writeln("spring.data.mongodb.database="+this.ProjectName.getText());
             } else if (this.DatabaseType.getValue().equals("MySQL")) {
                 picoWriter.writeln("spring.datasource.url="+this.DatabaseLink.getText());
+                picoWriter.writeln("spring.datasource.username={username}");
+                picoWriter.writeln("spring.datasource.password={password}");
                 picoWriter.writeln("spring.datasource.driver-class-name=org.mariadb.jdbc.Driver");
                 picoWriter.writeln("spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect");
                 picoWriter.writeln("spring.jpa.hibernate.ddl-auto=none");
@@ -1121,6 +1162,7 @@ public class AppController implements Initializable {
         this.relationCombobox.getItems().clear();
         this.RepositoriesList.getItems().clear();
         this.repositoryCombobox.getItems().clear();
+        this.serviceRepositoryList.getItems().clear();
 
         if(!ServicesList.getItems().isEmpty())
         {
@@ -1132,6 +1174,15 @@ public class AppController implements Initializable {
                 controllerServiceList.getItems().remove(oldS);
                 ServicesList.getItems().add(i,newS);
                 controllerServiceList.getItems().add(i,newS);
+            }
+        }
+        if(!ControllerList.getItems().isEmpty())
+        {
+            for(int i =0;i<ControllerList.getItems().size();i++){
+                Controller oldC=ControllerList.getItems().get(i);
+                Controller newC=new Controller(oldC.getName());
+                ControllerList.getItems().remove(oldC);
+                ControllerList.getItems().add(i,newC);
             }
         }
     }
