@@ -17,6 +17,12 @@ module com.app.generator {
     requires plexus.utils;
     opens com.app.generator to javafx.fxml;
     exports com.app.generator;
-    exports com.app.generator.util;
-    opens com.app.generator.util to javafx.fxml;
+    exports com.app.generator.util.controller;
+    opens com.app.generator.util.controller to javafx.fxml;
+    exports com.app.generator.util.domain;
+    opens com.app.generator.util.domain to javafx.fxml;
+    exports com.app.generator.util.repository;
+    opens com.app.generator.util.repository to javafx.fxml;
+    exports com.app.generator.util.service;
+    opens com.app.generator.util.service to javafx.fxml;
 }

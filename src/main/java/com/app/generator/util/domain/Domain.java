@@ -1,4 +1,4 @@
-package com.app.generator.util;
+package com.app.generator.util.domain;
 
 import javafx.util.Pair;
 import org.ainslec.picocog.PicoWriter;
@@ -95,7 +95,7 @@ public class Domain {
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*");
             picoWriter.writeln("import java.io.Serializable");
-            if(database.equals("MySQL")) {
+            if(database.equals("MariaDB")) {
                 picoWriter.writeln("import org.springframework.hateoas.RepresentationModel");
                 picoWriter.writeln("import "+persistence+".persistence.*");
             }
@@ -106,7 +106,7 @@ public class Domain {
             }
             picoWriter.writeln("import "+persistence+".validation.constraints.*");
             picoWriter.writeln("");
-            if(database.equals("MySQL")) {
+            if(database.equals("MariaDB")) {
                 picoWriter.writeln("@Entity");
                 picoWriter.writeln("@Table(name = \"" + this.name.toUpperCase() + "\")");
             }
@@ -134,7 +134,7 @@ public class Domain {
                 picoWriter.writeln_l("}");
             }
             else{
-                if(database.equals("MySQL"))
+                if(database.equals("MariaDB"))
                     picoWriter.writeln_r("class "+nameCap+"(");
                 else {
                     picoWriter.writeln_r("class " + nameCap + "{");
@@ -143,7 +143,7 @@ public class Domain {
 
                 picoWriter.writeln("@Id");
                 for (Pair<String, String> field : fields) {
-                    if(database.equals("MySQL"))
+                    if(database.equals("MariaDB"))
                         picoWriter.writeln("var "+field.getKey()+": "+field.getValue()+"? = null,");
                     else
                         picoWriter.writeln("var "+field.getKey()+": "+field.getValue()+"? = null");
@@ -154,7 +154,7 @@ public class Domain {
                     picoWriter.writeln("@DocumentReference(lazy = true)");
                     picoWriter.writeln("var "+relationClass.getName().toLowerCase()+": "+StringUtils.capitalize(relationClass.getName())+"? = null");
                 }
-                if(!database.equals("MySQL")) {
+                if(!database.equals("MariaDB")) {
                     StringBuilder params = new StringBuilder();
                     for (Pair<String, String> field : fields) {
                         params.append(field.getKey()).append(": ").append(field.getValue()).append(",");
@@ -197,7 +197,7 @@ public class Domain {
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*;");
             picoWriter.writeln("import java.io.Serializable;");
-            if(database.equals("MySQL")) {
+            if(database.equals("MariaDB")) {
                 picoWriter.writeln("import org.springframework.hateoas.RepresentationModel;");
                 picoWriter.writeln("import "+persistence+".persistence.*;");
             }
@@ -213,7 +213,7 @@ public class Domain {
                 picoWriter.writeln("");
                 picoWriter.writeln("@Data");
             }
-            if(database.equals("MySQL")) {
+            if(database.equals("MariaDB")) {
                 picoWriter.writeln("@Entity");
                 picoWriter.writeln("@Table(name = \"" + this.name.toUpperCase() + "\")");
             }
@@ -267,7 +267,7 @@ public class Domain {
                 }
             }
             else{
-                if(database.equals("MySQL"))
+                if(database.equals("MariaDB"))
                     picoWriter.writeln_r("public class "+nameCap+" extends RepresentationModel<"+nameCap+">{");
                 else
                     picoWriter.writeln_r("public class "+nameCap+"{");

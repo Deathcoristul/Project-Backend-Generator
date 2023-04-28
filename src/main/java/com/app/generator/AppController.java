@@ -1,8 +1,13 @@
 package com.app.generator;
 
-import com.app.generator.util.*;
-import com.app.generator.util.Repository;
+import com.app.generator.util.repository.Repository;
 
+
+import com.app.generator.util.controller.Controller;
+import com.app.generator.util.domain.Domain;
+import com.app.generator.util.service.Service;
+import io.spring.initializr.generator.buildsystem.DependencyScope;
+import io.spring.initializr.generator.buildsystem.MavenRepository;
 import io.spring.initializr.generator.buildsystem.gradle.*;
 import io.spring.initializr.generator.io.IndentingWriter;
 import javafx.beans.property.SimpleStringProperty;
@@ -130,11 +135,11 @@ public class AppController implements Initializable {
         this.PackageType.getItems().setAll("Jar","War");
         this.Language.getItems().setAll("Java","Kotlin");
         this.JavaVersion.getItems().setAll(8,11,17,18);
-        this.SpringBootVersion.getItems().setAll("3.0.3-SNAPSHOT","3.0.2","2.7.9-SNAPSHOT","2.7.8");
-        this.DatabaseType.getItems().setAll("None","MongoDB","MySQL");
+        this.SpringBootVersion.getItems().setAll("3.0.6","2.7.11");
+        this.DatabaseType.getItems().setAll("None","MongoDB","MariaDB");
         this.typeCombobox.getItems().setAll("String","Integer","Boolean","UUID","Double","Date");
         this.dependencyOptionalCombobox.getItems().setAll(true,false);
-        this.dependencyScopeCombobox.getItems().setAll("compile","provided","runtime","test","system");
+        this.dependencyScopeCombobox.getItems().setAll("compile","provided","runtime","test");
         this.columnName.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getKey()));
         this.columnType.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getValue()));
         this.domainFieldTable.setPlaceholder(new Label(""));
@@ -341,9 +346,9 @@ public class AppController implements Initializable {
                 buildMainFiles();
                 buildTestFiles();
                 if(this.language.equals("ro"))
-                    showMessageDialog(null,"Proiectul s-a generat!","SUCCES", JOptionPane.WARNING_MESSAGE);
+                    showMessageDialog(null,"Proiectul s-a generat!","SUCCES", JOptionPane.INFORMATION_MESSAGE);
                 else
-                    showMessageDialog(null,"The project has been generated!","SUCCES", JOptionPane.WARNING_MESSAGE);
+                    showMessageDialog(null,"The project has been generated!","SUCCESS", JOptionPane.INFORMATION_MESSAGE);
             }
         }
         catch (Exception e)
@@ -356,17 +361,104 @@ public class AppController implements Initializable {
         isJakarta=false;
     }
 
-    private void buildGradle() {
+    private void buildGradle() throws IOException {
         //TODO Gradle
         GradleBuild build=new GradleBuild();
-        //Gradle
-        StandardGradlePlugin plugin=new StandardGradlePlugin("org.springframework.boot");
-        plugin.setVersion(this.SpringBootVersion.getValue());
-        build.properties().property("version","0.0.1-SNAPSHOT");
-        //IndentingWriter indentingWriter = new IndentingWriter();
-        GroovyDslGradleBuildWriter writer = new GroovyDslGradleBuildWriter();
-        //writer.writeTo(build,new File("build.gradle"));
-        //build
+
+        build.plugins().add("org.springframework.boot",plugin -> plugin.setVersion(this.SpringBootVersion.getValue()));
+        if(this.SpringBootVersion.getValue().startsWith("3"))
+            build.plugins().add("io.spring.dependency-management",plugin -> plugin.setVersion("1.1.0"));
+        else
+            build.plugins().add("io.spring.dependency-management",plugin -> plugin.setVersion("1.0.15.RELEASE"));
+        if(PackageType.getValue().equals("War"))
+            build.plugins().add("war");
+        if(this.Language.getValue().equals("Kotlin"))
+        {
+            //TODO pentru import Kotlin
+            if(this.SpringBootVersion.getValue().startsWith("3"))
+            {
+                build.plugins().add("org.jetbrains.kotlin.jvm",plugin -> plugin.setVersion("1.8.0"));
+                build.plugins().add("org.jetbrains.kotlin.plugin.spring",plugin -> plugin.setVersion("1.8.0"));
+            }
+            else{
+                build.plugins().add("org.jetbrains.kotlin.jvm",plugin -> plugin.setVersion("1.6.21"));
+                build.plugins().add("org.jetbrains.kotlin.plugin.spring",plugin -> plugin.setVersion("1.6.21"));
+            }
+        }
+        else{
+            build.plugins().add("java");
+        }
+        build.settings().sourceCompatibility(this.JavaVersion.getValue().toString());
+        build.settings().group(this.Group.getText());
+        build.settings().version("0.0.1-SNAPSHOT");
+
+        build.repositories().add(MavenRepository.MAVEN_CENTRAL);
+        //TODO id-ul este unic aparent si face overwrite pentru alte dependinte
+        build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter", DependencyScope.COMPILE);
+        //build.dependencies().add
+        build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-web", DependencyScope.COMPILE);
+        build.dependencies().add("testImplementation","org.springframework.boot","spring-boot-starter-test", DependencyScope.TEST_COMPILE);
+        if(!DatabaseType.getValue().equals("None"))
+            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-validation", DependencyScope.COMPILE);
+        if(DatabaseType.getValue().equals("MongoDB"))
+            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-mongodb", DependencyScope.COMPILE);
+        else if(DatabaseType.getValue().equals("MariaDB")){
+            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-jpa", DependencyScope.COMPILE);
+            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-rest", DependencyScope.COMPILE);
+            build.dependencies().add("runtimeOnly","org.mariadb.jdbc","mariadb-java-client", DependencyScope.RUNTIME);
+        }
+        if(!SpringBootVersion.getValue().startsWith("2"))
+            isJakarta=true;
+        for(Dependency d : DependenciesList.getItems())
+        {
+            if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok") && d.isOptional()) {
+                lombok = true;
+                build.dependencies().add("compileOnly","org.projectlombok","lombok", DependencyScope.COMPILE);
+                build.dependencies().add("annotationProcessor","org.projectlombok","lombok", DependencyScope.ANNOTATION_PROCESSOR);
+            }
+            else{
+                DependencyScope scope=DependencyScope.COMPILE;
+                String id = "implementation";
+                if(d.getScope().equals("runtime")) {
+                    scope=DependencyScope.RUNTIME;
+                    id="runtimeOnly";
+                }
+                else if(d.getScope().equals("test"))
+                {
+                    scope=DependencyScope.TEST_COMPILE;
+                    id="testImplementation";
+                }
+                else if (d.getScope().equals("provided"))
+                    id="compileOnly";
+                build.dependencies().add(id,d.getGroupId(),d.getArtifactId()+":"+d.getVersion(),scope);
+            }
+        }
+        // Personalizează task-ul "test"
+        if(this.Language.getValue().equals("Kotlin"))
+            build.tasks().customizeWithType("KotlinCompile",task ->{
+                task.nested("kotlinOptions",customizer ->{
+                    customizer.attribute("freeCompilerArgs","['-Xjsr305=strict']");
+                    customizer.attribute("jvmTarget",this.JavaVersion.getValue().toString());
+                });
+                //task.attribute("freeCompilerArgs","['-Xjsr305=strict']");
+                //task.attribute("jvmTarget",this.JavaVersion.getValue().toString());
+            });
+
+        build.tasks().customize("test", task -> task.invoke("useJUnitPlatform"));
+        GradleBuildWriter gradleWriter = new GroovyDslGradleBuildWriter();
+        Writer writer = new FileWriter(locationURI+"\\build.gradle");
+        IndentingWriter indentingWriter = new IndentingWriter(writer);
+        gradleWriter.writeTo(indentingWriter,build);
+        indentingWriter.close();
+        writer.close();
+
+        //acum vom crea setting.gradle
+        PicoWriter picoWriter=new PicoWriter();
+        picoWriter.writeln("rootProject.name='"+Artifact.getText()+"'");
+        BufferedWriter bufferedWriter=new BufferedWriter(new FileWriter(locationURI+"\\setting.gradle"));
+        bufferedWriter.write(picoWriter.toString());
+        bufferedWriter.close();
+
     }
 
 
@@ -525,7 +617,7 @@ public class AppController implements Initializable {
             if (this.DatabaseType.getValue().equals("MongoDB")) {
                 picoWriter.writeln("spring.data.mongodb.uri="+this.DatabaseLink.getText());
                 picoWriter.writeln("spring.data.mongodb.database="+this.ProjectName.getText());
-            } else if (this.DatabaseType.getValue().equals("MySQL")) {
+            } else if (this.DatabaseType.getValue().equals("MariaDB")) {
                 picoWriter.writeln("spring.datasource.url="+this.DatabaseLink.getText());
                 picoWriter.writeln("spring.datasource.username={username}");
                 picoWriter.writeln("spring.datasource.password={password}");
@@ -569,7 +661,7 @@ public class AppController implements Initializable {
             }
         }
         PicoWriter picoWriter=new PicoWriter();
-        picoWriter.writeln("package "+StringUtils.capitalize(this.ProjectName.getText())+endChar);
+        picoWriter.writeln("package "+StringUtils.capitalize(this.PackageName.getText())+endChar);
         picoWriter.writeln("");
         picoWriter.writeln("import org.junit.jupiter.api.Test"+endChar);
         picoWriter.writeln("import org.springframework.boot.test.context.SpringBootTest"+endChar);
@@ -608,7 +700,13 @@ public class AppController implements Initializable {
         properties.setProperty("java.version",this.JavaVersion.getValue().toString());
 
         if(this.Language.getValue().equals("Kotlin"))
-            properties.setProperty("kotlin.version","1.8.0");
+        {
+            if (this.SpringBootVersion.getValue().startsWith("3"))
+                properties.setProperty("kotlin.version","1.8.0");
+            else
+                properties.setProperty("kotlin.version","1.6.21");
+        }
+
         model.setProperties(properties);
 
         List<Dependency> dependencyList=new ArrayList<>();
@@ -632,7 +730,7 @@ public class AppController implements Initializable {
             d.setArtifactId("spring-boot-starter-validation");
             dependencyList.add(d);
         }
-        if(DatabaseType.getValue().equals("MySQL"))
+        if(DatabaseType.getValue().equals("MariaDB"))
         {
             Dependency d=new Dependency();
             d.setGroupId("org.springframework.boot");
@@ -641,6 +739,10 @@ public class AppController implements Initializable {
             d=new Dependency();
             d.setGroupId("org.springframework.boot");
             d.setArtifactId("spring-boot-starter-data-rest");
+            dependencyList.add(d);
+            d=new Dependency();
+            d.setGroupId("org.springframework.boot");
+            d.setArtifactId("spring-boot-starter-data-hateoas");
             dependencyList.add(d);
             d=new Dependency();
             d.setGroupId("org.mariadb.jdbc");
@@ -716,7 +818,7 @@ public class AppController implements Initializable {
             build.setTestSourceDirectory("${project.basedir}/src/test/kotlin");
             plugin=new Plugin();
             plugin.setGroupId("org.jetbrains.kotlin");
-            plugin.setArtifactId("kotlin-maven-plugin");
+            plugin.setArtifactId(" ");
             Xpp3Dom config = new Xpp3Dom("configuration");
             Xpp3Dom args=new Xpp3Dom("args");
             Xpp3Dom arg=new Xpp3Dom("arg");
@@ -725,9 +827,9 @@ public class AppController implements Initializable {
             config.addChild(args);
 
             Xpp3Dom compilerPlugins=new Xpp3Dom("compilerPlugins");
-            Xpp3Dom cplugin=new Xpp3Dom("plugin");
-            cplugin.setValue("spring");
-            compilerPlugins.addChild(cplugin);
+            Xpp3Dom compilerPlugin=new Xpp3Dom("plugin");
+            compilerPlugin.setValue("spring");
+            compilerPlugins.addChild(compilerPlugin);
             config.addChild(compilerPlugins);
             plugin.setConfiguration(config);
             List<Dependency> kotlinDependencies=new ArrayList<>();
@@ -742,6 +844,8 @@ public class AppController implements Initializable {
         build.setPlugins(pluginList);
         model.setBuild(build);
         new MavenXpp3Writer().write(writer,model);
+        writer.close();
+
     }
     public void onRemoveDependency() {
         this.DependenciesList.getItems().remove(this.DependenciesList.getSelectionModel().getSelectedItem());
@@ -904,7 +1008,7 @@ public class AppController implements Initializable {
         Domain domain = new Domain(DomainField.getText(),new ArrayList<>(domainFieldTable.getItems()));
         if(relationCombobox.getValue()!=null) {
             Domain domain2 = relationCombobox.getValue();
-            if(!RelationField.getText().equals("") && this.DatabaseType.getValue().equals("MySQL")) {
+            if(!RelationField.getText().equals("") && this.DatabaseType.getValue().equals("MariaDB")) {
                 ArrayList<Pair<String, String>> fields = new ArrayList<Pair<String, String>>();
                 Pair<String, String> pair1 = domain.getFields().get(0);
                 Pair<String, String> pair2 = domain2.getFields().get(0);
@@ -1153,7 +1257,7 @@ public class AppController implements Initializable {
 
     public void onDatabaseTypeChanged(ActionEvent actionEvent) {
 
-        this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MySQL"));
+        this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.addDomainButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
         this.addRepositoryButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
 
@@ -1367,8 +1471,9 @@ public class AppController implements Initializable {
 
     public void onSelectDependency(MouseEvent mouseEvent) {
         JSONObject dep = dependencySearchListView.getSelectionModel().getSelectedItem();
-        this.dependencyGroupField.setText(dep.getString("g"));
-        this.dependencyArtifactField.setText(dep.getString("a"));
+        this.dependencyGroupField.setText(dep.getString("g"));//group
+        this.dependencyArtifactField.setText(dep.getString("a"));//artifact
         this.dependencyVersionField.setText(dep.getString("latestVersion"));
+        this.dependencyTypeField.setText(dep.getString("p"));//type/packaging
     }
 }

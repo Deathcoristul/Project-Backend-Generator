@@ -1,5 +1,7 @@
-package com.app.generator.util;
+package com.app.generator.util.service;
 
+import com.app.generator.util.domain.Domain;
+import com.app.generator.util.repository.Repository;
 import javafx.util.Pair;
 import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;

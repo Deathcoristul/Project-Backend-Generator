@@ -1,5 +1,6 @@
-package com.app.generator.util;
+package com.app.generator.util.repository;
 
+import com.app.generator.util.domain.Domain;
 import javafx.util.Pair;
 import org.ainslec.picocog.PicoWriter;
 import org.apache.commons.lang3.StringUtils;
@@ -65,7 +66,7 @@ public class Repository {
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*");
             picoWriter.writeln("import "+GroupAndArtefact+".domains.*");
-            if(database.equals("MySQL")){
+            if(database.equals("MariaDB")){
                 picoWriter.writeln("import org.springframework.data.jpa.repository.*");
                 picoWriter.writeln_r("interface "+ nameCap+
                         " : JpaRepository<"+domainNameCap+","+idField.getValue()+"> {");
@@ -84,7 +85,7 @@ public class Repository {
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*;");
             picoWriter.writeln("import "+GroupAndArtefact+".domains.*;");
-            if(database.equals("MySQL")){
+            if(database.equals("MariaDB")){
                 picoWriter.writeln("import org.springframework.data.jpa.repository.*;");
                 picoWriter.writeln_r("public interface "+ nameCap+
                         " extends JpaRepository<"+domainNameCap+","+idField.getValue()+"> {");
