@@ -145,6 +145,7 @@
             <contextMenu>
                <ContextMenu>
                   <items>
+                     <MenuItem fx:id="DomainContextFieldId" mnemonicParsing="false" onAction="#onMakeId" text="Declară-l identificator unic" />
                      <MenuItem fx:id="DomainContextFieldDelete" mnemonicParsing="false" onAction="#onRemoveFieldFromDomain" text="Șterge" />
                   </items>
                </ContextMenu>

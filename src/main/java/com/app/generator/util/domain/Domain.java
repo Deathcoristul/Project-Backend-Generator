@@ -96,7 +96,6 @@ public class Domain {
             picoWriter.writeln("import java.util.*");
             picoWriter.writeln("import java.io.Serializable");
             if(database.equals("MariaDB")) {
-                picoWriter.writeln("import org.springframework.hateoas.RepresentationModel");
                 picoWriter.writeln("import "+persistence+".persistence.*");
             }
             else {
@@ -137,7 +136,7 @@ public class Domain {
                 if(database.equals("MariaDB"))
                     picoWriter.writeln_r("class "+nameCap+"(");
                 else {
-                    picoWriter.writeln_r("class " + nameCap + "{");
+                    picoWriter.writeln_r("open class " + nameCap + "{");
                     picoWriter.writeln("@NotNull");
                 }
 
@@ -180,7 +179,7 @@ public class Domain {
                     picoWriter.writeln_l("}");
                 }
                 else
-                    picoWriter.writeln_l("): RepresentationModel<"+nameCap+">()");
+                    picoWriter.writeln_l(")");
             }
         }
         else{
@@ -198,7 +197,6 @@ public class Domain {
             picoWriter.writeln("import java.util.*;");
             picoWriter.writeln("import java.io.Serializable;");
             if(database.equals("MariaDB")) {
-                picoWriter.writeln("import org.springframework.hateoas.RepresentationModel;");
                 picoWriter.writeln("import "+persistence+".persistence.*;");
             }
             else {
@@ -267,10 +265,7 @@ public class Domain {
                 }
             }
             else{
-                if(database.equals("MariaDB"))
-                    picoWriter.writeln_r("public class "+nameCap+" extends RepresentationModel<"+nameCap+">{");
-                else
-                    picoWriter.writeln_r("public class "+nameCap+"{");
+                picoWriter.writeln_r("public class "+nameCap+"{");
                 picoWriter.writeln("@Id");
                 for(Pair<String,String> field:fields)
                 {
@@ -336,5 +331,16 @@ public class Domain {
         BufferedWriter fileWriter=new BufferedWriter(new FileWriter(f));
         fileWriter.write(picoWriter.toString());
         fileWriter.close();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Domain domain = (Domain) obj;
+        return Objects.equals(name, domain.name) &&
+                Objects.equals(fields, domain.fields) &&
+                isRelation == domain.isRelation &&
+                Objects.equals(relationClass, domain.relationClass);
     }
 }

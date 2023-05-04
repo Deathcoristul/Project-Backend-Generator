@@ -3,11 +3,6 @@ module com.app.generator {
     requires javafx.fxml;
     requires javafx.web;
     requires org.controlsfx.controls;
-    requires com.dlsc.formsfx;
-    requires validatorfx;
-    requires org.kordamp.ikonli.javafx;
-    requires org.kordamp.bootstrapfx.core;
-    requires eu.hansolo.tilesfx;
     requires org.json;
     requires java.desktop;
     requires org.ainslec.picocog;
@@ -15,6 +10,7 @@ module com.app.generator {
     requires initializr.generator;
     requires maven.model;
     requires plexus.utils;
+    requires java.sql;
     opens com.app.generator to javafx.fxml;
     exports com.app.generator;
     exports com.app.generator.util.controller;

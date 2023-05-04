@@ -2,7 +2,7 @@ package com.app.generator;
 
 import com.app.generator.util.repository.Repository;
 
-
+import java.sql.*;
 import com.app.generator.util.controller.Controller;
 import com.app.generator.util.domain.Domain;
 import com.app.generator.util.service.Service;
@@ -30,6 +30,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.model.*;
 import org.apache.maven.model.io.xpp3.MavenXpp3Writer;
@@ -121,6 +122,7 @@ public class AppController implements Initializable {
     public TextField dependencyVersionField;
     public TextField searchBar;
     public ListView<JSONObject> dependencySearchListView;
+    public MenuItem DomainContextFieldId;
 
     private String locationURI;
     private String language;
@@ -281,6 +283,10 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "Pentru versiunea "+this.SpringBootVersion.getValue()+" utilizați o versiune Java de minim 17!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+            if(this.SpringBootVersion.getValue().startsWith("2") && domainsHaveUUID()){
+                showMessageDialog(null, "Pentru versiunea "+this.SpringBootVersion.getValue()+", atributele de tip UUID nu vor funcționa la fel de bine ca în versiunea 3!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
         else{
             if (this.ProjectManager.getValue() == null) {
@@ -305,12 +311,16 @@ public class AppController implements Initializable {
             }
             if(this.DatabaseLink.getText().equals("") && !this.DatabaseType.getValue().equals("None") && this.DatabaseType.getValue()!=null)
             {
-                showMessageDialog(null, "The project has not a link for the database set!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                showMessageDialog(null, "The project has not a link for the database set!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if(this.SpringBootVersion.getValue().startsWith("3") && this.JavaVersion.getValue()<17)
             {
-                showMessageDialog(null, "For Spring Boot Version "+this.SpringBootVersion.getValue()+", you must use a Java version at least 17!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                showMessageDialog(null, "For Spring Boot Version "+this.SpringBootVersion.getValue()+", you must use a Java version at least 17!", "WARNING", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if(this.SpringBootVersion.getValue().startsWith("2") && domainsHaveUUID()){
+                showMessageDialog(null, "For Spring Boot version "+this.SpringBootVersion.getValue()+", UUID attributes won't work well like in version 3!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -345,6 +355,7 @@ public class AppController implements Initializable {
                 }
                 buildMainFiles();
                 buildTestFiles();
+
                 if(this.language.equals("ro"))
                     showMessageDialog(null,"Proiectul s-a generat!","SUCCES", JOptionPane.INFORMATION_MESSAGE);
                 else
@@ -362,7 +373,6 @@ public class AppController implements Initializable {
     }
 
     private void buildGradle() throws IOException {
-        //TODO Gradle
         GradleBuild build=new GradleBuild();
 
         build.plugins().add("org.springframework.boot",plugin -> plugin.setVersion(this.SpringBootVersion.getValue()));
@@ -394,8 +404,7 @@ public class AppController implements Initializable {
 
         build.repositories().add(MavenRepository.MAVEN_CENTRAL);
         //TODO id-ul este unic aparent si face overwrite pentru alte dependinte
-        build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter", DependencyScope.COMPILE);
-        //build.dependencies().add
+
         build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-web", DependencyScope.COMPILE);
         build.dependencies().add("testImplementation","org.springframework.boot","spring-boot-starter-test", DependencyScope.TEST_COMPILE);
         if(!DatabaseType.getValue().equals("None"))
@@ -405,13 +414,16 @@ public class AppController implements Initializable {
         else if(DatabaseType.getValue().equals("MariaDB")){
             build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-jpa", DependencyScope.COMPILE);
             build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-rest", DependencyScope.COMPILE);
+            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-hateoas", DependencyScope.COMPILE);
             build.dependencies().add("runtimeOnly","org.mariadb.jdbc","mariadb-java-client", DependencyScope.RUNTIME);
         }
         if(!SpringBootVersion.getValue().startsWith("2"))
             isJakarta=true;
+        if(PackageType.getValue().equals("War"))
+            build.dependencies().add("providedRuntime","org.springframework.boot","spring-boot-starter-tomcat", DependencyScope.RUNTIME);
         for(Dependency d : DependenciesList.getItems())
         {
-            if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok") && d.isOptional()) {
+            if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok")) {
                 lombok = true;
                 build.dependencies().add("compileOnly","org.projectlombok","lombok", DependencyScope.COMPILE);
                 build.dependencies().add("annotationProcessor","org.projectlombok","lombok", DependencyScope.ANNOTATION_PROCESSOR);
@@ -435,14 +447,10 @@ public class AppController implements Initializable {
         }
         // Personalizează task-ul "test"
         if(this.Language.getValue().equals("Kotlin"))
-            build.tasks().customizeWithType("KotlinCompile",task ->{
-                task.nested("kotlinOptions",customizer ->{
-                    customizer.attribute("freeCompilerArgs","['-Xjsr305=strict']");
-                    customizer.attribute("jvmTarget",this.JavaVersion.getValue().toString());
-                });
-                //task.attribute("freeCompilerArgs","['-Xjsr305=strict']");
-                //task.attribute("jvmTarget",this.JavaVersion.getValue().toString());
-            });
+            build.tasks().customizeWithType("KotlinCompile",task -> task.nested("kotlinOptions", customizer ->{
+                customizer.attribute("freeCompilerArgs","['-Xjsr305=strict']");
+                customizer.attribute("jvmTarget",this.JavaVersion.getValue().toString());
+            }));
 
         build.tasks().customize("test", task -> task.invoke("useJUnitPlatform"));
         GradleBuildWriter gradleWriter = new GroovyDslGradleBuildWriter();
@@ -619,18 +627,31 @@ public class AppController implements Initializable {
                 picoWriter.writeln("spring.data.mongodb.database="+this.ProjectName.getText());
             } else if (this.DatabaseType.getValue().equals("MariaDB")) {
                 picoWriter.writeln("spring.datasource.url="+this.DatabaseLink.getText());
-                picoWriter.writeln("spring.datasource.username={username}");
-                picoWriter.writeln("spring.datasource.password={password}");
+                picoWriter.writeln("spring.datasource.username=root");
+                picoWriter.writeln("spring.datasource.password=root");
                 picoWriter.writeln("spring.datasource.driver-class-name=org.mariadb.jdbc.Driver");
                 picoWriter.writeln("spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect");
                 picoWriter.writeln("spring.jpa.hibernate.ddl-auto=none");
+                if(domainsHaveUUID())
+                    picoWriter.writeln("spring.jpa.properties.hibernate.type.preferred_uuid_jdbc_type=CHAR");
             }
         }
         BufferedWriter fileWriter=new BufferedWriter(new FileWriter(f));
         fileWriter.write(picoWriter.toString());
         fileWriter.close();
     }
-
+    public boolean domainsHaveUUID(){
+        for(Domain domain : DomainList.getItems())
+        {
+            for(Pair<String,String> field : domain.getFields()){
+                if(field.getValue().equals("UUID"))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     public void buildTestFiles() throws IOException {
         String tempURI=locationURI+"\\test";
         File f=new File(tempURI);
@@ -712,10 +733,6 @@ public class AppController implements Initializable {
         List<Dependency> dependencyList=new ArrayList<>();
         Dependency dependency=new Dependency();
         dependency.setGroupId("org.springframework.boot");
-        dependency.setArtifactId("spring-boot-starter");
-        dependencyList.add(dependency);
-        dependency=new Dependency();
-        dependency.setGroupId("org.springframework.boot");
         dependency.setArtifactId("spring-boot-starter-web");
         dependencyList.add(dependency);
         dependency=new Dependency();
@@ -723,6 +740,13 @@ public class AppController implements Initializable {
         dependency.setArtifactId("spring-boot-starter-test");
         dependency.setScope("test");
         dependencyList.add(dependency);
+        if(PackageType.getValue().equals("War")) {
+            dependency = new Dependency();
+            dependency.setGroupId("org.springframework.boot");
+            dependency.setArtifactId("spring-boot-starter-tomcat");
+            dependency.setScope("provided");
+            dependencyList.add(dependency);
+        }
         if(!DatabaseType.getValue().equals("None"))
         {
             Dependency d=new Dependency();
@@ -742,7 +766,7 @@ public class AppController implements Initializable {
             dependencyList.add(d);
             d=new Dependency();
             d.setGroupId("org.springframework.boot");
-            d.setArtifactId("spring-boot-starter-data-hateoas");
+            d.setArtifactId("spring-boot-starter-hateoas");
             dependencyList.add(d);
             d=new Dependency();
             d.setGroupId("org.mariadb.jdbc");
@@ -761,7 +785,7 @@ public class AppController implements Initializable {
             isJakarta=true;
         for(Dependency d : DependenciesList.getItems())
         {
-            if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok") && d.isOptional())
+            if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok"))
                 lombok=true;
             dependencyList.add(d);
         }
@@ -818,7 +842,7 @@ public class AppController implements Initializable {
             build.setTestSourceDirectory("${project.basedir}/src/test/kotlin");
             plugin=new Plugin();
             plugin.setGroupId("org.jetbrains.kotlin");
-            plugin.setArtifactId(" ");
+            plugin.setArtifactId("kotlin-maven-plugin");
             Xpp3Dom config = new Xpp3Dom("configuration");
             Xpp3Dom args=new Xpp3Dom("args");
             Xpp3Dom arg=new Xpp3Dom("arg");
@@ -855,18 +879,102 @@ public class AppController implements Initializable {
         Repository repository = this.RepositoriesList.getSelectionModel().getSelectedItem();
         this.RepositoriesList.getItems().remove(repository);
         this.repositoryCombobox.getItems().remove(repository);
+        for(int i=0;i<ServicesList.getItems().size();i++)
+        {
+            Service service = ServicesList.getItems().get(i);
+            boolean hasRepository =false;
+            for(Repository repoElem : service.getRepositories()){
+                if (repoElem.equals(repository)) {
+                    hasRepository = true;
+                    break;
+                }
+            }
+            if(hasRepository) {
+                Service newService = new Service(service);
+                newService.getRepositories().remove(repository);
+                for (Controller controller : ControllerList.getItems()) {
+                    boolean hasService =false;
+                    for(Service servElem : controller.getServices()){
+                        if (servElem.equals(service)) {
+                            hasService = true;
+                            break;
+                        }
+                    }
+                    if(hasService) {
+                        int indx = controller.getServices().indexOf(service);
+                        controller.getServices().remove(service);
+                        controller.getServices().add(indx, newService);
+                    }
+                }
+                ServicesList.getItems().remove(service);
+                serviceCombobox.getItems().remove(service);
+                ServicesList.getItems().add(i, newService);
+                serviceCombobox.getItems().add(i, newService);
+            }
+        }
     }
 
     public void onRemoveDomain() {
         Domain domain=this.DomainList.getSelectionModel().getSelectedItem();
         this.DomainList.getItems().remove(domain);
         this.domainCombobox.getItems().remove(domain);
+
+        List<Repository> repositoriesOfDomain = new ArrayList<>();
+        for(Repository repository : RepositoriesList.getItems()){
+            if(repository.getDomain().equals(domain))
+                repositoriesOfDomain.add(repository);
+        }
+
+        for(int j=0;j<RepositoriesList.getItems().size();j++)
+        {
+            Repository repository = RepositoriesList.getItems().get(j);
+            if(repository.getDomain().equals(domain)){
+                for(int i=0;i<ServicesList.getItems().size();i++) {
+                    Service service = ServicesList.getItems().get(i);
+                    boolean hasRepository =false;
+                    for(Repository repoElem : service.getRepositories()){
+                        if (repoElem.equals(repository)) {
+                            hasRepository = true;
+                            break;
+                        }
+                    }
+                    if (hasRepository) {
+                        Service newService = new Service(service);
+                        newService.getRepositories().remove(repository);
+                        for (Controller controller : ControllerList.getItems()) {
+                            boolean hasService =false;
+                            for(Service servElem : controller.getServices()){
+                                if (servElem.equals(service)) {
+                                    hasService = true;
+                                    break;
+                                }
+                            }
+                            if (hasService) {
+                                int indx = controller.getServices().indexOf(service);
+                                controller.getServices().remove(service);
+                                controller.getServices().add(indx, newService);
+                            }
+                        }
+                        ServicesList.getItems().remove(service);
+                        serviceCombobox.getItems().remove(service);
+                        ServicesList.getItems().add(i, newService);
+                        serviceCombobox.getItems().add(i, newService);
+                    }
+                }
+            }
+        }
+        RepositoriesList.getItems().removeAll(repositoriesOfDomain);
+        repositoryCombobox.getItems().removeAll(repositoriesOfDomain);
+
+
     }
 
     public void onRemoveService() {
         Service service=this.ServicesList.getSelectionModel().getSelectedItem();
         this.ServicesList.getItems().remove(service);
         this.serviceCombobox.getItems().remove(service);
+        for(Controller controller : ControllerList.getItems())
+            controller.getServices().remove(service);
     }
 
     public void onRemoveController() {
@@ -982,6 +1090,7 @@ public class AppController implements Initializable {
         returnToMain();
     }
     public void OK_Domain(ActionEvent actionEvent) {
+        ArrayList<String> idTypes=new ArrayList<>(Arrays.asList("String","Integer","Boolean","UUID","Double","Date"));
         if(this.language.equals("ro")) {
             if (DomainField.getText().equals("")) {
                 showMessageDialog(null, "Domeniul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -990,6 +1099,12 @@ public class AppController implements Initializable {
             if (domainFieldTable.getItems().size()==0)
             {
                 showMessageDialog(null, "Domeniul nu are niciun atribut!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if(!idTypes.contains(domainFieldTable.getItems().get(0).getValue()))
+            {
+                showMessageDialog(null, "Identificatorul nu poate fi de tipul "
+                        +domainFieldTable.getItems().get(0).getValue()+"!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -1002,6 +1117,12 @@ public class AppController implements Initializable {
             if (domainFieldTable.getItems().size()==0)
             {
                 showMessageDialog(null, "The Domain has no fields!", "WARNING", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            if(!idTypes.contains(domainFieldTable.getItems().get(0).getValue()))
+            {
+                showMessageDialog(null, "The Identifier can't be of "
+                        +domainFieldTable.getItems().get(0).getValue()+" type!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
@@ -1028,17 +1149,67 @@ public class AppController implements Initializable {
             }
         }
         if(mustEdit) {
+            Domain oldDomain=DomainList.getSelectionModel().getSelectedItem();
             this.DomainList.getItems().add(DomainList.getSelectionModel().getSelectedIndex(),domain);
             this.DomainList.getItems().remove(DomainList.getSelectionModel().getSelectedItem());
             this.domainCombobox.getItems().clear();
             for(Domain d:this.DomainList.getItems())
                 this.domainCombobox.getItems().add(d);
+
+
+            for(int j=0;j<RepositoriesList.getItems().size();j++)
+            {
+                Repository repository = RepositoriesList.getItems().get(j);
+                if(repository.getDomain().equals(oldDomain)) {
+                    for (int i = 0; i < ServicesList.getItems().size(); i++) {
+                        Service service = ServicesList.getItems().get(i);
+                        boolean hasRepository =false;
+                        for(Repository repoElem : service.getRepositories()){
+                            if (repoElem.equals(repository)) {
+                                hasRepository = true;
+                                break;
+                            }
+                        }
+                        if (hasRepository) {
+                            Service newService = new Service(service);
+                            Repository newRepository = new Repository(repository.getName(), domain);
+                            int indxRepository = newService.getRepositories().indexOf(repository);
+                            newService.getRepositories().remove(repository);
+                            newService.getRepositories().add(indxRepository, newRepository);
+                            for (Controller controller : ControllerList.getItems()) {
+                                boolean hasService =false;
+                                for(Service servElem : controller.getServices()){
+                                    if (servElem.equals(service)) {
+                                        hasService = true;
+                                        break;
+                                    }
+                                }
+                                if (hasService) {
+                                    int indx = controller.getServices().indexOf(service);
+                                    controller.getServices().remove(service);
+                                    controller.getServices().add(indx, newService);
+                                }
+                            }
+                            ServicesList.getItems().remove(service);
+                            serviceCombobox.getItems().remove(service);
+                            ServicesList.getItems().add(i, newService);
+                            serviceCombobox.getItems().add(i, newService);
+                        }
+                    }
+
+                    Repository newRepository = new Repository(repository.getName(), domain);
+                    RepositoriesList.getItems().remove(repository);
+                    RepositoriesList.getItems().add(j, newRepository);
+                    repositoryCombobox.getItems().remove(repository);
+                    repositoryCombobox.getItems().add(j, newRepository);
+                }
+            }
+
         }
         else{
             this.DomainList.getItems().add(domain);
             this.domainCombobox.getItems().add(domain);
         }
-
         returnToMain();
     }
 
@@ -1066,15 +1237,60 @@ public class AppController implements Initializable {
                 return;
             }
         }
-        Repository repository = new Repository(RepositoryField.getText(),domainCombobox.getValue());
-        if(mustEdit) {
-            this.RepositoriesList.getItems().add(RepositoriesList.getSelectionModel().getSelectedIndex(),repository);
-            this.RepositoriesList.getItems().remove(RepositoriesList.getSelectionModel().getSelectedItem());
-            this.repositoryCombobox.setItems(this.RepositoriesList.getItems());
+        try {
+            Repository repository = new Repository(RepositoryField.getText(), domainCombobox.getValue());
+            if (mustEdit) {
+                Repository oldRepository = RepositoriesList.getSelectionModel().getSelectedItem();
+                this.RepositoriesList.getItems().add(RepositoriesList.getSelectionModel().getSelectedIndex(), repository);
+                this.RepositoriesList.getItems().remove(oldRepository);
+                this.repositoryCombobox.getItems().clear();
+
+                for(Repository r:RepositoriesList.getItems())
+                    this.repositoryCombobox.getItems().add(r);
+
+                for (int i = 0; i < ServicesList.getItems().size(); i++) {
+                    Service service = ServicesList.getItems().get(i);
+                    boolean hasRepository =false;
+                    for(Repository repoElem : service.getRepositories()){
+                        if (repoElem.equals(oldRepository)) {
+                            hasRepository = true;
+                            break;
+                        }
+                    }
+                    if (hasRepository) {
+                        Service newService = new Service(service);
+                        int indxRepository = newService.getRepositories().indexOf(oldRepository);
+                        newService.getRepositories().remove(oldRepository);
+                        newService.getRepositories().add(indxRepository, repository);
+
+                        for (Controller controller : ControllerList.getItems()) {
+                            boolean hasService =false;
+                            for(Service servElem : controller.getServices()){
+                                if (servElem.equals(service)) {
+                                    hasService = true;
+                                    break;
+                                }
+                            }
+                            if (hasService) {
+                                int indx = controller.getServices().indexOf(service);
+                                controller.getServices().remove(service);
+                                controller.getServices().add(indx, newService);
+                            }
+                        }
+                        ServicesList.getItems().remove(service);
+                        serviceCombobox.getItems().remove(service);
+                        ServicesList.getItems().add(i, newService);
+                        serviceCombobox.getItems().add(i, newService);
+                    }
+                }
+            } else {
+                this.repositoryCombobox.getItems().add(repository);
+                this.RepositoriesList.getItems().add(repository);
+            }
         }
-        else{
-            this.repositoryCombobox.getItems().add(repository);
-            this.RepositoriesList.getItems().add(repository);
+        catch (Exception ex)
+        {
+            ex.printStackTrace();
         }
 
         returnToMain();
@@ -1096,9 +1312,28 @@ public class AppController implements Initializable {
         }
         Service service = new Service(ServiceField.getText(),new ArrayList<>(serviceRepositoryList.getItems()));
         if(mustEdit) {
+            Service oldService = ServicesList.getSelectionModel().getSelectedItem();
             this.ServicesList.getItems().add(ServicesList.getSelectionModel().getSelectedIndex(),service);
-            this.ServicesList.getItems().remove(ServicesList.getSelectionModel().getSelectedItem());
-            this.serviceCombobox.setItems(this.ServicesList.getItems());
+            this.ServicesList.getItems().remove(oldService);
+
+            this.serviceCombobox.getItems().clear();
+            for(Service s:ServicesList.getItems())
+                this.serviceCombobox.getItems().add(s);
+
+            for (Controller controller : ControllerList.getItems()) {
+                boolean hasService =false;
+                for(Service servElem : controller.getServices()){
+                    if (servElem.equals(oldService)) {
+                        hasService = true;
+                        break;
+                    }
+                }
+                if(hasService) {
+                    int indx = controller.getServices().indexOf(oldService);
+                    controller.getServices().remove(oldService);
+                    controller.getServices().add(indx, service);
+                }
+            }
         }
         else {
             this.serviceCombobox.getItems().add(service);
@@ -1254,7 +1489,11 @@ public class AppController implements Initializable {
     public void onRemoveFieldFromDomain(ActionEvent actionEvent) {
         this.domainFieldTable.getItems().remove(this.domainFieldTable.getSelectionModel().getSelectedItem());
     }
-
+    public void onMakeId(ActionEvent actionEvent) {
+        Pair<String,String> field = this.domainFieldTable.getSelectionModel().getSelectedItem();
+        this.domainFieldTable.getItems().remove(field);
+        this.domainFieldTable.getItems().add(0,field);
+    }
     public void onDatabaseTypeChanged(ActionEvent actionEvent) {
 
         this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
@@ -1272,21 +1511,19 @@ public class AppController implements Initializable {
         {
             for(int i=0;i<ServicesList.getItems().size();i++)
             {
-                Service oldS =ServicesList.getItems().get(i);
-                Service newS =new Service(ServicesList.getItems().get(i).getName());
-                ServicesList.getItems().remove(oldS);
-                controllerServiceList.getItems().remove(oldS);
-                ServicesList.getItems().add(i,newS);
-                controllerServiceList.getItems().add(i,newS);
+                Service service =ServicesList.getItems().get(i);
+                service.getRepositories().clear();
             }
         }
         if(!ControllerList.getItems().isEmpty())
         {
             for(int i =0;i<ControllerList.getItems().size();i++){
-                Controller oldC=ControllerList.getItems().get(i);
-                Controller newC=new Controller(oldC.getName());
-                ControllerList.getItems().remove(oldC);
-                ControllerList.getItems().add(i,newC);
+                Controller controller=ControllerList.getItems().get(i);
+                for(int j=0;j<controller.getServices().size();j++)
+                {
+                    Service service =controller.getServices().get(j);
+                    service.getRepositories().clear();
+                }
             }
         }
     }
@@ -1357,6 +1594,7 @@ public class AppController implements Initializable {
         this.dependencyVersionField.setPromptText("Version");
         this.dependencyCancelButton.setText("Cancel");
         this.searchBar.setPromptText("Search dependency");
+        this.DomainContextFieldId.setText("Make it ID");
     }
 
     public void onRomanianClick(MouseEvent mouseEvent) {
@@ -1425,6 +1663,7 @@ public class AppController implements Initializable {
         this.dependencyVersionField.setPromptText("Versiune");
         this.dependencyCancelButton.setText("Anulează");
         this.searchBar.setPromptText("Caută dependința");
+        this.DomainContextFieldId.setText("Declară-l identificator unic");
     }
 
     public void onFinishedSearch(ActionEvent mouseEvent) {
@@ -1476,4 +1715,6 @@ public class AppController implements Initializable {
         this.dependencyVersionField.setText(dep.getString("latestVersion"));
         this.dependencyTypeField.setText(dep.getString("p"));//type/packaging
     }
+
+
 }

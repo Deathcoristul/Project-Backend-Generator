@@ -30,7 +30,16 @@ public class Repository {
     {
         return name;
     }
-    public void write(String repositoriesURI,String lang,String database) throws IOException {
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;//daca cele 2 referinte indica acelasi obiect
+        if (obj == null || getClass() != obj.getClass()) return false;
+        Repository that = (Repository) obj;
+        return Objects.equals(name, that.name) && Objects.equals(domain, that.domain);
+    }
+
+    public void write(String repositoriesURI, String lang, String database) throws IOException {
         String[] parts=repositoriesURI.split("\\\\");
         boolean langFolderFound=false;
         StringBuilder packageBuilder = new StringBuilder();
@@ -70,15 +79,21 @@ public class Repository {
                 picoWriter.writeln("import org.springframework.data.jpa.repository.*");
                 picoWriter.writeln_r("interface "+ nameCap+
                         " : JpaRepository<"+domainNameCap+","+idField.getValue()+"> {");
-                picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1\",nativeQuery=true)");
+                if(domain.isRelation())
+                    picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1 AND "+domain.getFields().get(1).getKey()+"=?2\",nativeQuery=true)");
+                else
+                    picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1\",nativeQuery=true)");
             }
             else{
                 picoWriter.writeln("import org.springframework.data.mongodb.repository.*");
                 picoWriter.writeln_r("interface "+ nameCap+
                         " : MongoRepository<"+domainNameCap+","+idField.getValue()+"> {");
-                picoWriter.writeln("@Query(\"{"+idField.getKey()+ ":'?0'" +"}\")");
+                picoWriter.writeln("@Query(\"{'"+idField.getKey()+ "':?0" +"}\")");
             }
-            picoWriter.writeln("fun get"+domainNameCap+"ById(id : "+idField.getValue()+") : "+domainNameCap);
+            if(domain.isRelation())
+                picoWriter.writeln("fun get"+domainNameCap+"ById(id : "+idField.getValue()+",id2 : "+domain.getFields().get(1).getValue()+") : "+domainNameCap);
+            else
+                picoWriter.writeln("fun get"+domainNameCap+"ById(id : "+idField.getValue()+") : "+domainNameCap);
         }
         else{
             picoWriter.writeln("package "+pckg+";");
@@ -89,15 +104,21 @@ public class Repository {
                 picoWriter.writeln("import org.springframework.data.jpa.repository.*;");
                 picoWriter.writeln_r("public interface "+ nameCap+
                         " extends JpaRepository<"+domainNameCap+","+idField.getValue()+"> {");
-                picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1\",nativeQuery=true)");
+                if(domain.isRelation())
+                    picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1 AND "+domain.getFields().get(1).getKey()+"=?2\",nativeQuery=true)");
+                else
+                    picoWriter.writeln("@Query(value=\"SELECT * FROM "+this.domain.getName().toUpperCase()+" WHERE "+idField.getKey()+"=?1\",nativeQuery=true)");
             }
             else{
                 picoWriter.writeln("import org.springframework.data.mongodb.repository.*;");
                 picoWriter.writeln_r("public interface "+ nameCap+
                         " extends MongoRepository<"+domainNameCap+","+idField.getValue()+"> {");
-                picoWriter.writeln("@Query(\"{"+idField.getKey()+ ":'?0'" +"}\")");
+                picoWriter.writeln("@Query(\"{'"+idField.getKey()+ "':?0" +"}\")");
             }
-            picoWriter.writeln(domainNameCap+" get"+domainNameCap+"ById("+idField.getValue()+" id)"+";");
+            if(domain.isRelation())
+                picoWriter.writeln(domainNameCap+" get"+domainNameCap+"ById("+idField.getValue()+" id,"+domain.getFields().get(1).getValue()+" id2)"+";");
+            else
+                picoWriter.writeln(domainNameCap+" get"+domainNameCap+"ById("+idField.getValue()+" id)"+";");
         }
         picoWriter.writeln_l("}");
         BufferedWriter fileWriter=new BufferedWriter(new FileWriter(f));
