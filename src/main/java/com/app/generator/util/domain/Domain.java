@@ -13,7 +13,17 @@ public class Domain {
     private final ArrayList<Pair<String,String>> fields;
     private boolean isRelation=false;
     private Domain relationClass=null;
+    private Domain firstDomain=null;
 
+    public Domain getFirstDomain() {
+        return firstDomain;
+    }
+
+    public Domain getSecondDomain() {
+        return secondDomain;
+    }
+
+    private Domain secondDomain=null;
     public Domain getRelationClass() {
         return relationClass;
     }
@@ -25,10 +35,12 @@ public class Domain {
         this.relationClass = relationClass;
     }
 
-    public Domain(String name, ArrayList<Pair<String, String>> fields, boolean isRelation) {
+    public Domain(String name, ArrayList<Pair<String, String>> fields, boolean isRelation,Domain firstDomain,Domain secondDomain) {
         this.name = name;
         this.fields = fields;
         this.isRelation = isRelation;
+        this.firstDomain=firstDomain;
+        this.secondDomain=secondDomain;
     }
 
     public boolean isRelation() {

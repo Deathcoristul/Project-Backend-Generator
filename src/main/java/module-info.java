@@ -11,6 +11,7 @@ module com.app.generator {
     requires maven.model;
     requires plexus.utils;
     requires java.sql;
+    requires org.mariadb.jdbc;
     opens com.app.generator to javafx.fxml;
     exports com.app.generator;
     exports com.app.generator.util.controller;

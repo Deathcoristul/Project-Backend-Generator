@@ -9,13 +9,5 @@
         <module name="ProjectBackendGenerator" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="Project Backend Generator" target="11" />
-    </bytecodeTargetLevel>
-  </component>
-  <component name="JavacSettings">
-    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
-      <module name="Project Backend Generator" options="" />
-    </option>
   </component>
 </project>

@@ -2,7 +2,6 @@ package com.app.generator;
 
 import com.app.generator.util.repository.Repository;
 
-import java.sql.*;
 import com.app.generator.util.controller.Controller;
 import com.app.generator.util.domain.Domain;
 import com.app.generator.util.service.Service;
@@ -25,7 +24,7 @@ import javafx.util.Pair;
 import org.ainslec.picocog.*;
 import javax.swing.*;
 import java.io.*;
-
+import java.sql.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -123,6 +122,8 @@ public class AppController implements Initializable {
     public TextField searchBar;
     public ListView<JSONObject> dependencySearchListView;
     public MenuItem DomainContextFieldId;
+    public TextField usernameField;
+    public TextField passwordField;
 
     private String locationURI;
     private String language;
@@ -139,7 +140,7 @@ public class AppController implements Initializable {
         this.JavaVersion.getItems().setAll(8,11,17,18);
         this.SpringBootVersion.getItems().setAll("3.0.6","2.7.11");
         this.DatabaseType.getItems().setAll("None","MongoDB","MariaDB");
-        this.typeCombobox.getItems().setAll("String","Integer","Boolean","UUID","Double","Date");
+        this.typeCombobox.getItems().setAll("String","Integer","Long","Boolean","UUID","Double","Date");
         this.dependencyOptionalCombobox.getItems().setAll(true,false);
         this.dependencyScopeCombobox.getItems().setAll("compile","provided","runtime","test");
         this.columnName.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getKey()));
@@ -333,6 +334,7 @@ public class AppController implements Initializable {
             endChar=";";
         }
         final DirectoryChooser chooser=new DirectoryChooser();
+        chooser.setInitialDirectory(new File("."));
         try{
             File selected=chooser.showDialog(new Stage());
             if(selected!=null)
@@ -360,6 +362,9 @@ public class AppController implements Initializable {
                     showMessageDialog(null,"Proiectul s-a generat!","SUCCES", JOptionPane.INFORMATION_MESSAGE);
                 else
                     showMessageDialog(null,"The project has been generated!","SUCCESS", JOptionPane.INFORMATION_MESSAGE);
+
+                if(this.DatabaseType.getValue().equals("MariaDB"))
+                    createTables();
             }
         }
         catch (Exception e)
@@ -370,6 +375,60 @@ public class AppController implements Initializable {
         langExtension="";
         lombok=false;
         isJakarta=false;
+    }
+
+    private void createTables() {
+        if(DomainList.getItems().size()!=0){
+            try {
+                Class.forName("org.mariadb.jdbc.Driver");
+                Connection connection = DriverManager.getConnection(this.DatabaseLink.getText(), usernameField.getText(), passwordField.getText());
+                Statement statement = connection.createStatement();
+                for(Domain domain : DomainList.getItems())
+                {
+                    StringBuilder query= new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
+                    ArrayList<Pair<String,String>> fields = domain.getFields();
+                    ArrayList<String> mariaDBDataTypes = new ArrayList<>();
+                    //vom utiliza tipuri de date MariaDB
+                    for(Pair<String,String> pair :fields){
+                        if(pair.getValue().equals("String"))
+                            mariaDBDataTypes.add("VARCHAR");
+                        else if(pair.getValue().equals("Long"))
+                            mariaDBDataTypes.add("BIGINT");
+                        else if (pair.getValue().equals("UUID"))
+                            mariaDBDataTypes.add("CHAR(36)");
+                        else
+                            mariaDBDataTypes.add(pair.getValue().toUpperCase());
+                    }
+                    if(domain.isRelation())
+                    {//todo testare
+                        query.append(fields.get(0).getKey()+" "+mariaDBDataTypes.get(0)+",");
+                        query.append(fields.get(1).getKey()+" "+mariaDBDataTypes.get(1)+",");
+                        query.append("PRIMARY KEY("+fields.get(0).getKey()+","+fields.get(1).getKey()+"),");
+                        Domain domain1 = domain.getFirstDomain();
+                        Domain domain2 = domain.getSecondDomain();
+                        query.append("FOREIGN KEY ("+fields.get(0).getKey()+") REFERENCES users("+domain1.getFields().get(0).getKey()+"),");
+                        query.append("FOREIGN KEY ("+fields.get(1).getKey()+") REFERENCES users("+domain2.getFields().get(0).getKey()+")");
+                    }
+                    else{
+                        query.append(fields.get(0).getKey()+" "+mariaDBDataTypes.get(0)+" PRIMARY KEY");
+                        for(int i=1;i<fields.size();i++){
+                            query.append(","+fields.get(i).getKey()+" "+mariaDBDataTypes.get(i));
+                        }
+                    }
+                    query.append(')');
+
+                    statement.execute(query.toString());
+                }
+                connection.close();
+            }
+            catch (Exception e)
+            {
+                if(this.language.equals("ro"))
+                    showMessageDialog(null,"Nu s-a putut realiza conexiunea cu baza de date, deci tabelele nu se pot crea!","ATENTIE", JOptionPane.WARNING_MESSAGE);
+                else
+                    showMessageDialog(null,"The connection to the database could not be established, so the tables cannot be created!","WARNING", JOptionPane.WARNING_MESSAGE);
+            }
+        }
     }
 
     private void buildGradle() throws IOException {
@@ -384,7 +443,6 @@ public class AppController implements Initializable {
             build.plugins().add("war");
         if(this.Language.getValue().equals("Kotlin"))
         {
-            //TODO pentru import Kotlin
             if(this.SpringBootVersion.getValue().startsWith("3"))
             {
                 build.plugins().add("org.jetbrains.kotlin.jvm",plugin -> plugin.setVersion("1.8.0"));
@@ -401,32 +459,30 @@ public class AppController implements Initializable {
         build.settings().sourceCompatibility(this.JavaVersion.getValue().toString());
         build.settings().group(this.Group.getText());
         build.settings().version("0.0.1-SNAPSHOT");
-
         build.repositories().add(MavenRepository.MAVEN_CENTRAL);
-        //TODO id-ul este unic aparent si face overwrite pentru alte dependinte
-
-        build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-web", DependencyScope.COMPILE);
-        build.dependencies().add("testImplementation","org.springframework.boot","spring-boot-starter-test", DependencyScope.TEST_COMPILE);
+        //vom folosi variabila count in asa fel incat sa putem include in container toate dependintele
+        int count =1;
+        build.dependencies().add("implementation"+(count++),"org.springframework.boot","spring-boot-starter-web", DependencyScope.COMPILE);
+        build.dependencies().add("testImplementation"+(count++),"org.springframework.boot","spring-boot-starter-test", DependencyScope.TEST_COMPILE);
         if(!DatabaseType.getValue().equals("None"))
-            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-validation", DependencyScope.COMPILE);
+            build.dependencies().add("implementation"+(count++),"org.springframework.boot","spring-boot-starter-validation", DependencyScope.COMPILE);
         if(DatabaseType.getValue().equals("MongoDB"))
-            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-mongodb", DependencyScope.COMPILE);
+            build.dependencies().add("implementation"+(count++),"org.springframework.boot","spring-boot-starter-data-mongodb", DependencyScope.COMPILE);
         else if(DatabaseType.getValue().equals("MariaDB")){
-            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-jpa", DependencyScope.COMPILE);
-            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-data-rest", DependencyScope.COMPILE);
-            build.dependencies().add("implementation","org.springframework.boot","spring-boot-starter-hateoas", DependencyScope.COMPILE);
-            build.dependencies().add("runtimeOnly","org.mariadb.jdbc","mariadb-java-client", DependencyScope.RUNTIME);
+            build.dependencies().add("implementation"+(count++),"org.springframework.boot","spring-boot-starter-data-jpa", DependencyScope.COMPILE);
+            build.dependencies().add("implementation"+(count++),"org.springframework.boot","spring-boot-starter-data-rest", DependencyScope.COMPILE);
+            build.dependencies().add("runtimeOnly"+(count++),"org.mariadb.jdbc","mariadb-java-client", DependencyScope.RUNTIME);
         }
         if(!SpringBootVersion.getValue().startsWith("2"))
             isJakarta=true;
         if(PackageType.getValue().equals("War"))
-            build.dependencies().add("providedRuntime","org.springframework.boot","spring-boot-starter-tomcat", DependencyScope.RUNTIME);
+            build.dependencies().add("providedRuntime"+(count++),"org.springframework.boot","spring-boot-starter-tomcat", DependencyScope.RUNTIME);
         for(Dependency d : DependenciesList.getItems())
         {
             if(d.getGroupId().equals("org.projectlombok") && d.getArtifactId().equals("lombok")) {
                 lombok = true;
-                build.dependencies().add("compileOnly","org.projectlombok","lombok", DependencyScope.COMPILE);
-                build.dependencies().add("annotationProcessor","org.projectlombok","lombok", DependencyScope.ANNOTATION_PROCESSOR);
+                build.dependencies().add("compileOnly"+(count++),"org.projectlombok","lombok", DependencyScope.COMPILE);
+                build.dependencies().add("annotationProcessor"+(count++),"org.projectlombok","lombok", DependencyScope.ANNOTATION_PROCESSOR);
             }
             else{
                 DependencyScope scope=DependencyScope.COMPILE;
@@ -442,15 +498,17 @@ public class AppController implements Initializable {
                 }
                 else if (d.getScope().equals("provided"))
                     id="compileOnly";
-                build.dependencies().add(id,d.getGroupId(),d.getArtifactId()+":"+d.getVersion(),scope);
+                build.dependencies().add(id+(count++),d.getGroupId(),d.getArtifactId()+":"+d.getVersion(),scope);
             }
         }
         // Personalizează task-ul "test"
-        if(this.Language.getValue().equals("Kotlin"))
-            build.tasks().customizeWithType("KotlinCompile",task -> task.nested("kotlinOptions", customizer ->{
-                customizer.attribute("freeCompilerArgs","['-Xjsr305=strict']");
-                customizer.attribute("jvmTarget",this.JavaVersion.getValue().toString());
+        if(this.Language.getValue().equals("Kotlin")) {
+            build.dependencies().add("implementation","org.jetbrains.kotlin","kotlin-reflect",DependencyScope.COMPILE);
+            build.tasks().customizeWithType("KotlinCompile", task -> task.nested("kotlinOptions", customizer -> {
+                customizer.attribute("freeCompilerArgs", "['-Xjsr305=strict']");
+                customizer.attribute("jvmTarget", this.JavaVersion.getValue().toString());
             }));
+        }
 
         build.tasks().customize("test", task -> task.invoke("useJUnitPlatform"));
         GradleBuildWriter gradleWriter = new GroovyDslGradleBuildWriter();
@@ -459,11 +517,41 @@ public class AppController implements Initializable {
         gradleWriter.writeTo(indentingWriter,build);
         indentingWriter.close();
         writer.close();
+        if(Language.getValue().equals("Kotlin")) {
+            //Se va citi tot continutul fisierului
+            BufferedReader reader = new BufferedReader(new FileReader(locationURI+"\\build.gradle"));
+            StringBuilder existingContent = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                existingContent.append(line).append("\n");
+            }
+            reader.close();
+            //inseram importul si continutul citit in fisier
+            writer = new FileWriter(locationURI + "\\build.gradle", false);
+            PrintWriter printWriter = new PrintWriter(writer);
+            printWriter.print("import org.jetbrains.kotlin.gradle.tasks.KotlinCompile\n"+existingContent);
+            printWriter.close();
+            writer.close();
+        }
 
-        //acum vom crea setting.gradle
+        //la versiunea 3.x.x trebuie sa includem si un wrapper pentru a nu avea probleme la descarcare si injectare
+        File f=new File(locationURI+"\\gradle");
+        f.mkdir();
+        f=new File(locationURI+"\\gradle\\wrapper");
+        f.mkdir();
         PicoWriter picoWriter=new PicoWriter();
+        picoWriter.writeln("distributionBase=GRADLE_USER_HOME");
+        picoWriter.writeln("distributionPath=wrapper/dists");
+        picoWriter.writeln("distributionUrl=https\\://services.gradle.org/distributions/gradle-7.6.1-bin.zip");
+        picoWriter.writeln("zipStoreBase=GRADLE_USER_HOME");
+        picoWriter.writeln("zipStorePath=wrapper/dists");
+        BufferedWriter bufferedWriter=new BufferedWriter(new FileWriter(locationURI+"\\gradle\\wrapper\\gradle-wrapper.properties"));
+        bufferedWriter.write(picoWriter.toString());
+        bufferedWriter.close();
+        //acum vom crea setting.gradle
+        picoWriter=new PicoWriter();
         picoWriter.writeln("rootProject.name='"+Artifact.getText()+"'");
-        BufferedWriter bufferedWriter=new BufferedWriter(new FileWriter(locationURI+"\\setting.gradle"));
+        bufferedWriter=new BufferedWriter(new FileWriter(locationURI+"\\setting.gradle"));
         bufferedWriter.write(picoWriter.toString());
         bufferedWriter.close();
 
@@ -547,7 +635,7 @@ public class AppController implements Initializable {
                 picoWriter.writeln("import org.springframework.boot.builder.SpringApplicationBuilder;");
                 picoWriter.writeln("import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;");
                 picoWriter.writeln("");
-                picoWriter.writeln_r("public class "+servletName+" extends extends SpringBootServletInitializer{");
+                picoWriter.writeln_r("public class "+servletName+" extends SpringBootServletInitializer{");
                 picoWriter.writeln("@Override");
                 picoWriter.writeln_r("protected SpringApplicationBuilder configure(SpringApplicationBuilder application) {");
                 picoWriter.writeln("return application.sources("+StringUtils.capitalize(this.ProjectName.getText())+".class);");
@@ -640,7 +728,7 @@ public class AppController implements Initializable {
         fileWriter.write(picoWriter.toString());
         fileWriter.close();
     }
-    public boolean domainsHaveUUID(){
+    private boolean domainsHaveUUID(){
         for(Domain domain : DomainList.getItems())
         {
             for(Pair<String,String> field : domain.getFields()){
@@ -763,10 +851,6 @@ public class AppController implements Initializable {
             d=new Dependency();
             d.setGroupId("org.springframework.boot");
             d.setArtifactId("spring-boot-starter-data-rest");
-            dependencyList.add(d);
-            d=new Dependency();
-            d.setGroupId("org.springframework.boot");
-            d.setArtifactId("spring-boot-starter-hateoas");
             dependencyList.add(d);
             d=new Dependency();
             d.setGroupId("org.mariadb.jdbc");
@@ -986,12 +1070,18 @@ public class AppController implements Initializable {
         this.ProjectName.setText(this.Artifact.getText());
     }
 
-
-
     public void returnToMain() {
         for(Node n : mainAnchorPane.getChildren())
         {
             n.setDisable(false);
+            if(DatabaseType.getValue()==null || DatabaseType.getValue().equals("None")){
+                addDomainButton.setDisable(true);
+                addRepositoryButton.setDisable(true);
+            }
+            if(!DatabaseType.getValue().equals("MariaDB")){
+                usernameField.setDisable(true);
+                passwordField.setDisable(true);
+            }
         }
         domainAnchorPane.setVisible(false);
         domainAnchorPane.setDisable(true);
@@ -1090,7 +1180,7 @@ public class AppController implements Initializable {
         returnToMain();
     }
     public void OK_Domain(ActionEvent actionEvent) {
-        ArrayList<String> idTypes=new ArrayList<>(Arrays.asList("String","Integer","Boolean","UUID","Double","Date"));
+        ArrayList<String> idTypes=new ArrayList<>(Arrays.asList("String","Integer","Long","UUID"));
         if(this.language.equals("ro")) {
             if (DomainField.getText().equals("")) {
                 showMessageDialog(null, "Domeniul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -1140,7 +1230,7 @@ public class AppController implements Initializable {
                 }
                 fields.add(pair1);
                 fields.add(pair2);
-                Domain relation = new Domain(RelationField.getText(), fields, true);
+                Domain relation = new Domain(RelationField.getText(), fields, true,domain,domain2);
                 this.DomainList.getItems().add(relation);
                 this.domainCombobox.getItems().add(relation);
             }
@@ -1499,7 +1589,8 @@ public class AppController implements Initializable {
         this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.addDomainButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
         this.addRepositoryButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
-
+        this.usernameField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
+        this.passwordField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.DomainList.getItems().clear();
         this.domainCombobox.getItems().clear();
         this.relationCombobox.getItems().clear();
@@ -1595,6 +1686,8 @@ public class AppController implements Initializable {
         this.dependencyCancelButton.setText("Cancel");
         this.searchBar.setPromptText("Search dependency");
         this.DomainContextFieldId.setText("Make it ID");
+        this.usernameField.setPromptText("MariaDB Username");
+        this.passwordField.setPromptText("MariaDB Password");
     }
 
     public void onRomanianClick(MouseEvent mouseEvent) {
@@ -1664,6 +1757,8 @@ public class AppController implements Initializable {
         this.dependencyCancelButton.setText("Anulează");
         this.searchBar.setPromptText("Caută dependința");
         this.DomainContextFieldId.setText("Declară-l identificator unic");
+        this.usernameField.setPromptText("Nume de utilizator MariaDB");
+        this.passwordField.setPromptText("Parolă MariaDB");
     }
 
     public void onFinishedSearch(ActionEvent mouseEvent) {
