@@ -123,7 +123,7 @@ public class AppController implements Initializable {
     public ListView<JSONObject> dependencySearchListView;
     public MenuItem DomainContextFieldId;
     public TextField usernameField;
-    public TextField passwordField;
+    public PasswordField passwordField;
 
     private String locationURI;
     private String language;
@@ -288,6 +288,13 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "Pentru versiunea "+this.SpringBootVersion.getValue()+", atributele de tip UUID nu vor funcționa la fel de bine ca în versiunea 3!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
+            if(this.DatabaseType.getValue().equals("MariaDB"))
+            {
+                if(this.usernameField.getText().equals("") || this.passwordField.getText().equals("")){
+                    showMessageDialog(null, "Lipsesc credențiale pentru MariaDB!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
         }
         else{
             if (this.ProjectManager.getValue() == null) {
@@ -323,6 +330,13 @@ public class AppController implements Initializable {
             if(this.SpringBootVersion.getValue().startsWith("2") && domainsHaveUUID()){
                 showMessageDialog(null, "For Spring Boot version "+this.SpringBootVersion.getValue()+", UUID attributes won't work well like in version 3!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
+            }
+            if(this.DatabaseType.getValue().equals("MariaDB"))
+            {
+                if(this.usernameField.getText().equals("") || this.passwordField.getText().equals("")){
+                    showMessageDialog(null, "Missing credentials for MariaDB!", "WARNING", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
             }
         }
         if(this.DatabaseType.getValue()==null)
@@ -383,6 +397,34 @@ public class AppController implements Initializable {
                 Class.forName("org.mariadb.jdbc.Driver");
                 Connection connection = DriverManager.getConnection(this.DatabaseLink.getText(), usernameField.getText(), passwordField.getText());
                 Statement statement = connection.createStatement();
+                //Pentru siguranta crearii tabelelor mai intai cream domeniile si apoi relatiile
+                for(Domain domain : DomainList.getItems())
+                {
+                    StringBuilder query= new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
+                    ArrayList<Pair<String,String>> fields = domain.getFields();
+                    ArrayList<String> mariaDBDataTypes = new ArrayList<>();
+                    //vom utiliza tipuri de date MariaDB
+                    for(Pair<String,String> pair :fields){
+                        if(pair.getValue().equals("String"))
+                            mariaDBDataTypes.add("VARCHAR");
+                        else if(pair.getValue().equals("Long"))
+                            mariaDBDataTypes.add("BIGINT");
+                        else if (pair.getValue().equals("UUID"))
+                            mariaDBDataTypes.add("CHAR(36)");
+                        else
+                            mariaDBDataTypes.add(pair.getValue().toUpperCase());
+                    }
+                    if(!domain.isRelation())
+                    {//todo testare
+                        query.append(fields.get(0).getKey()).append(" ").append(mariaDBDataTypes.get(0)).append(" PRIMARY KEY");
+                        for(int i=1;i<fields.size();i++){
+                            query.append(",").append(fields.get(i).getKey()).append(" ").append(mariaDBDataTypes.get(i));
+                        }
+                    }
+                    query.append(')');
+
+                    statement.execute(query.toString());
+                }
                 for(Domain domain : DomainList.getItems())
                 {
                     StringBuilder query= new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
@@ -401,19 +443,13 @@ public class AppController implements Initializable {
                     }
                     if(domain.isRelation())
                     {//todo testare
-                        query.append(fields.get(0).getKey()+" "+mariaDBDataTypes.get(0)+",");
-                        query.append(fields.get(1).getKey()+" "+mariaDBDataTypes.get(1)+",");
-                        query.append("PRIMARY KEY("+fields.get(0).getKey()+","+fields.get(1).getKey()+"),");
+                        query.append(fields.get(0).getKey()).append(" ").append(mariaDBDataTypes.get(0)).append(",");
+                        query.append(fields.get(1).getKey()).append(" ").append(mariaDBDataTypes.get(1)).append(",");
+                        query.append("PRIMARY KEY(").append(fields.get(0).getKey()).append(",").append(fields.get(1).getKey()).append("),");
                         Domain domain1 = domain.getFirstDomain();
                         Domain domain2 = domain.getSecondDomain();
-                        query.append("FOREIGN KEY ("+fields.get(0).getKey()+") REFERENCES users("+domain1.getFields().get(0).getKey()+"),");
-                        query.append("FOREIGN KEY ("+fields.get(1).getKey()+") REFERENCES users("+domain2.getFields().get(0).getKey()+")");
-                    }
-                    else{
-                        query.append(fields.get(0).getKey()+" "+mariaDBDataTypes.get(0)+" PRIMARY KEY");
-                        for(int i=1;i<fields.size();i++){
-                            query.append(","+fields.get(i).getKey()+" "+mariaDBDataTypes.get(i));
-                        }
+                        query.append("FOREIGN KEY (").append(fields.get(0).getKey()).append(") REFERENCES users(").append(domain1.getFields().get(0).getKey()).append("),");
+                        query.append("FOREIGN KEY (").append(fields.get(1).getKey()).append(") REFERENCES users(").append(domain2.getFields().get(0).getKey()).append(")");
                     }
                     query.append(')');
 
@@ -715,8 +751,8 @@ public class AppController implements Initializable {
                 picoWriter.writeln("spring.data.mongodb.database="+this.ProjectName.getText());
             } else if (this.DatabaseType.getValue().equals("MariaDB")) {
                 picoWriter.writeln("spring.datasource.url="+this.DatabaseLink.getText());
-                picoWriter.writeln("spring.datasource.username=root");
-                picoWriter.writeln("spring.datasource.password=root");
+                picoWriter.writeln("spring.datasource.username="+this.usernameField.getText());
+                picoWriter.writeln("spring.datasource.password="+this.passwordField.getText());
                 picoWriter.writeln("spring.datasource.driver-class-name=org.mariadb.jdbc.Driver");
                 picoWriter.writeln("spring.jpa.database-platform=org.hibernate.dialect.MariaDBDialect");
                 picoWriter.writeln("spring.jpa.hibernate.ddl-auto=none");
