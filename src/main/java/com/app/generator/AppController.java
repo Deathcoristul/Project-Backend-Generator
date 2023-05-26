@@ -11,12 +11,10 @@ import io.spring.initializr.generator.buildsystem.gradle.*;
 import io.spring.initializr.generator.io.IndentingWriter;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
-import javafx.event.ActionEvent;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
@@ -37,7 +35,6 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.json.*;
 
 import static javax.swing.JOptionPane.showMessageDialog;
-//TODO verificari erori la generare si care ar afecta runtime
 public class AppController implements Initializable {
     public AnchorPane mainAnchorPane;
     public AnchorPane domainAnchorPane;
@@ -398,62 +395,64 @@ public class AppController implements Initializable {
                 Connection connection = DriverManager.getConnection(this.DatabaseLink.getText(), usernameField.getText(), passwordField.getText());
                 Statement statement = connection.createStatement();
                 //Pentru siguranta crearii tabelelor mai intai cream domeniile si apoi relatiile
-                for(Domain domain : DomainList.getItems())
-                {
-                    StringBuilder query= new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
-                    ArrayList<Pair<String,String>> fields = domain.getFields();
-                    ArrayList<String> mariaDBDataTypes = new ArrayList<>();
-                    //vom utiliza tipuri de date MariaDB
-                    for(Pair<String,String> pair :fields){
-                        if(pair.getValue().equals("String"))
-                            mariaDBDataTypes.add("VARCHAR");
-                        else if(pair.getValue().equals("Long"))
-                            mariaDBDataTypes.add("BIGINT");
-                        else if (pair.getValue().equals("UUID"))
-                            mariaDBDataTypes.add("CHAR(36)");
-                        else
-                            mariaDBDataTypes.add(pair.getValue().toUpperCase());
-                    }
-                    if(!domain.isRelation())
-                    {//todo testare
+                for(Domain domain : DomainList.getItems()) {
+                    if (!domain.isRelation()) {
+                        statement.execute("DROP TABLE IF EXISTS " + domain.getName().toUpperCase() + ";");
+                        StringBuilder query = new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
+                        ArrayList<Pair<String, String>> fields = domain.getFields();
+                        ArrayList<String> mariaDBDataTypes = new ArrayList<>();
+                        //vom utiliza tipuri de date MariaDB
+                        for (Pair<String, String> pair : fields) {
+                            if (pair.getValue().equals("String"))
+                                mariaDBDataTypes.add("VARCHAR(255)");
+                            else if (pair.getValue().equals("Long"))
+                                mariaDBDataTypes.add("BIGINT");
+                            else if (pair.getValue().equals("UUID"))
+                                mariaDBDataTypes.add("CHAR(36)");
+                            else
+                                mariaDBDataTypes.add(pair.getValue().toUpperCase());
+                        }
                         query.append(fields.get(0).getKey()).append(" ").append(mariaDBDataTypes.get(0)).append(" PRIMARY KEY");
-                        for(int i=1;i<fields.size();i++){
+                        for (int i = 1; i < fields.size(); i++) {
                             query.append(",").append(fields.get(i).getKey()).append(" ").append(mariaDBDataTypes.get(i));
                         }
-                    }
-                    query.append(')');
 
-                    statement.execute(query.toString());
+                        query.append(");");
+
+                        statement.execute(query.toString());
+                    }
                 }
                 for(Domain domain : DomainList.getItems())
                 {
-                    StringBuilder query= new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
-                    ArrayList<Pair<String,String>> fields = domain.getFields();
-                    ArrayList<String> mariaDBDataTypes = new ArrayList<>();
-                    //vom utiliza tipuri de date MariaDB
-                    for(Pair<String,String> pair :fields){
-                        if(pair.getValue().equals("String"))
-                            mariaDBDataTypes.add("VARCHAR");
-                        else if(pair.getValue().equals("Long"))
-                            mariaDBDataTypes.add("BIGINT");
-                        else if (pair.getValue().equals("UUID"))
-                            mariaDBDataTypes.add("CHAR(36)");
-                        else
-                            mariaDBDataTypes.add(pair.getValue().toUpperCase());
-                    }
                     if(domain.isRelation())
-                    {//todo testare
+                    {
+                        statement.execute("DROP TABLE IF EXISTS "+domain.getName().toUpperCase()+";");
+                        StringBuilder query= new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
+                        ArrayList<Pair<String,String>> fields = domain.getFields();
+                        ArrayList<String> mariaDBDataTypes = new ArrayList<>();
+                        //vom utiliza tipuri de date MariaDB
+                        for(Pair<String,String> pair :fields){
+                            if(pair.getValue().equals("String"))
+                                mariaDBDataTypes.add("VARCHAR(255)");
+                            else if(pair.getValue().equals("Long"))
+                                mariaDBDataTypes.add("BIGINT");
+                            else if (pair.getValue().equals("UUID"))
+                                mariaDBDataTypes.add("CHAR(36)");
+                            else
+                                mariaDBDataTypes.add(pair.getValue().toUpperCase());
+                        }
                         query.append(fields.get(0).getKey()).append(" ").append(mariaDBDataTypes.get(0)).append(",");
                         query.append(fields.get(1).getKey()).append(" ").append(mariaDBDataTypes.get(1)).append(",");
                         query.append("PRIMARY KEY(").append(fields.get(0).getKey()).append(",").append(fields.get(1).getKey()).append("),");
                         Domain domain1 = domain.getFirstDomain();
                         Domain domain2 = domain.getSecondDomain();
-                        query.append("FOREIGN KEY (").append(fields.get(0).getKey()).append(") REFERENCES users(").append(domain1.getFields().get(0).getKey()).append("),");
-                        query.append("FOREIGN KEY (").append(fields.get(1).getKey()).append(") REFERENCES users(").append(domain2.getFields().get(0).getKey()).append(")");
-                    }
-                    query.append(')');
+                        query.append("FOREIGN KEY (").append(fields.get(0).getKey()).append(") REFERENCES ").append(domain1.getName().toUpperCase()).append("(").append(domain1.getFields().get(0).getKey()).append("),");
+                        query.append("FOREIGN KEY (").append(fields.get(1).getKey()).append(") REFERENCES ").append(domain2.getName().toUpperCase()).append("(").append(domain2.getFields().get(0).getKey()).append(")");
 
-                    statement.execute(query.toString());
+                        query.append(");");
+
+                        statement.execute(query.toString());
+                    }
                 }
                 connection.close();
             }
@@ -600,7 +599,7 @@ public class AppController implements Initializable {
         {
             if(sub.isDirectory())
                 deleteRecursively(sub);
-            sub.delete();//daca nu e director stergem direct
+            boolean delete = sub.delete();//daca nu e director stergem direct
         }
     }
     public void buildMainFiles() throws IOException {
@@ -1163,7 +1162,7 @@ public class AppController implements Initializable {
         pane.setDisable(false);
         pane.setVisible(true);
     }
-    public void OK_Dependency(ActionEvent actionEvent) {
+    public void OK_Dependency() {
         if(this.language.equals("ro")) {
             if (dependencyGroupField.getText().equals("")) {
                 showMessageDialog(null, "Dependința nu are grupul setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -1215,7 +1214,7 @@ public class AppController implements Initializable {
         }
         returnToMain();
     }
-    public void OK_Domain(ActionEvent actionEvent) {
+    public void OK_Domain() {
         ArrayList<String> idTypes=new ArrayList<>(Arrays.asList("String","Integer","Long","UUID"));
         if(this.language.equals("ro")) {
             if (DomainField.getText().equals("")) {
@@ -1339,7 +1338,7 @@ public class AppController implements Initializable {
         returnToMain();
     }
 
-    public void OK_Repository(ActionEvent actionEvent) {
+    public void OK_Repository() {
         if(this.language.equals("ro")) {
             if (RepositoryField.getText().equals("")) {
                 showMessageDialog(null, "Repozitoriul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -1422,7 +1421,7 @@ public class AppController implements Initializable {
         returnToMain();
     }
 
-    public void OK_Service(ActionEvent actionEvent) {
+    public void OK_Service() {
         if(this.language.equals("ro")) {
             if (ServiceField.getText().equals("")) {
                 showMessageDialog(null, "Serviciul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -1468,7 +1467,7 @@ public class AppController implements Initializable {
         returnToMain();
     }
 
-    public void OK_Controller(ActionEvent actionEvent) {
+    public void OK_Controller() {
         if(this.language.equals("ro")) {
             if (ControllerField.getText().equals("")) {
                 showMessageDialog(null, "Controller-ul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -1492,7 +1491,7 @@ public class AppController implements Initializable {
         returnToMain();
     }
 
-    public void onAddField(ActionEvent actionEvent) {
+    public void onAddField() {
         if(this.language.equals("ro")) {
             if (typeCombobox.getValue() == null) {
                 showMessageDialog(null, "Nu ati setat tipul de data al atributului!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -1526,18 +1525,18 @@ public class AppController implements Initializable {
             domainFieldTable.getItems().add(p);
     }
 
-    public void onAddRepositoryInService(ActionEvent actionEvent) {
+    public void onAddRepositoryInService() {
         if(repositoryCombobox.getValue() !=null && !serviceRepositoryList.getItems().contains(repositoryCombobox.getValue()))
             serviceRepositoryList.getItems().add(repositoryCombobox.getValue());
     }
 
-    public void onAddServiceInController(ActionEvent actionEvent) {
+    public void onAddServiceInController() {
         if(serviceCombobox.getValue()!=null && !controllerServiceList.getItems().contains(serviceCombobox.getValue()))
             controllerServiceList.getItems().add(serviceCombobox.getValue());
     }
 
 
-    public void onUpdateDependency(ActionEvent actionEvent) {
+    public void onUpdateDependency() {
         mustEdit=true;
         Dependency dependency = this.DependenciesList.getSelectionModel().getSelectedItem();
         if(dependency!=null)
@@ -1555,7 +1554,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void onUpdateRepository(ActionEvent actionEvent) {
+    public void onUpdateRepository() {
         mustEdit=true;
         Repository repository = this.RepositoriesList.getSelectionModel().getSelectedItem();
         if(repository!=null) {
@@ -1565,7 +1564,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void onUpdateDomain(ActionEvent actionEvent) {
+    public void onUpdateDomain() {
         mustEdit=true;
         Domain domain = this.DomainList.getSelectionModel().getSelectedItem();
         if(domain!=null) {
@@ -1582,7 +1581,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void onUpdateService(ActionEvent actionEvent) {
+    public void onUpdateService() {
         mustEdit=true;
         Service service = this.ServicesList.getSelectionModel().getSelectedItem();
         if(service!=null) {
@@ -1592,7 +1591,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void onUpdateController(ActionEvent actionEvent) {
+    public void onUpdateController() {
         mustEdit=true;
         Controller controller = this.ControllerList.getSelectionModel().getSelectedItem();
         if(controller!=null) {
@@ -1602,25 +1601,25 @@ public class AppController implements Initializable {
         }
     }
 
-    public void onRemoveServiceFromController(ActionEvent actionEvent) {
+    public void onRemoveServiceFromController() {
         Service service=this.controllerServiceList.getSelectionModel().getSelectedItem();
         this.controllerServiceList.getItems().remove(service);
     }
 
-    public void onRemoveRepositoryFromService(ActionEvent actionEvent) {
+    public void onRemoveRepositoryFromService() {
         Repository repository=this.serviceRepositoryList.getSelectionModel().getSelectedItem();
         this.serviceRepositoryList.getItems().remove(repository);
     }
 
-    public void onRemoveFieldFromDomain(ActionEvent actionEvent) {
+    public void onRemoveFieldFromDomain() {
         this.domainFieldTable.getItems().remove(this.domainFieldTable.getSelectionModel().getSelectedItem());
     }
-    public void onMakeId(ActionEvent actionEvent) {
+    public void onMakeId() {
         Pair<String,String> field = this.domainFieldTable.getSelectionModel().getSelectedItem();
         this.domainFieldTable.getItems().remove(field);
         this.domainFieldTable.getItems().add(0,field);
     }
-    public void onDatabaseTypeChanged(ActionEvent actionEvent) {
+    public void onDatabaseTypeChanged() {
 
         this.RelationField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.addDomainButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
@@ -1655,7 +1654,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void onEnglishClick(MouseEvent mouseEvent) {
+    public void onEnglishClick() {
         this.language="en";
         this.GenerateButton.setText("Generate");
         this.addControllerButton.setText("Add controller");
@@ -1726,7 +1725,7 @@ public class AppController implements Initializable {
         this.passwordField.setPromptText("MariaDB Password");
     }
 
-    public void onRomanianClick(MouseEvent mouseEvent) {
+    public void onRomanianClick() {
         this.language="ro";
         this.GenerateButton.setText("Generează");
         this.addControllerButton.setText("Adaugă controller");
@@ -1797,7 +1796,7 @@ public class AppController implements Initializable {
         this.passwordField.setPromptText("Parolă MariaDB");
     }
 
-    public void onFinishedSearch(ActionEvent mouseEvent) {
+    public void onFinishedSearch() {
         dependencySearchListView.getItems().clear();
         if(!searchBar.getText().equals("")) {
             try {
@@ -1839,7 +1838,7 @@ public class AppController implements Initializable {
         }
     }
 
-    public void onSelectDependency(MouseEvent mouseEvent) {
+    public void onSelectDependency() {
         JSONObject dep = dependencySearchListView.getSelectionModel().getSelectedItem();
         this.dependencyGroupField.setText(dep.getString("g"));//group
         this.dependencyArtifactField.setText(dep.getString("a"));//artifact
