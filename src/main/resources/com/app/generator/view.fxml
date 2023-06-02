@@ -217,6 +217,7 @@
          <ListView fx:id="dependencySearchListView" layoutX="26.0" layoutY="196.0" onMouseClicked="#onSelectDependency" prefHeight="180.0" prefWidth="440.0" />
       </children>
    </AnchorPane>
-   <TextField fx:id="usernameField" disable="true" layoutX="14.0" layoutY="574.0" prefHeight="26.0" prefWidth="326.0" promptText="Nume de utilizator MariaDB" />
-   <PasswordField fx:id="passwordField" disable="true" layoutX="353.0" layoutY="574.0" prefHeight="26.0" prefWidth="318.0" promptText="Parolă MariaDB" />
+   <TextField fx:id="usernameField" disable="true" layoutX="14.0" layoutY="574.0" prefHeight="26.0" prefWidth="223.0" promptText="Nume de utilizator MariaDB" />
+   <PasswordField fx:id="passwordField" disable="true" layoutX="247.0" layoutY="574.0" prefHeight="26.0" prefWidth="223.0" promptText="Parolă MariaDB" />
+   <CheckBox fx:id="createDatabaseCheckBox" disable="true" layoutX="529.0" layoutY="578.0" mnemonicParsing="false" prefHeight="18.0" prefWidth="136.0" text="Creare Baza de date" textAlignment="CENTER" />
 </AnchorPane>

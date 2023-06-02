@@ -121,6 +121,7 @@ public class AppController implements Initializable {
     public MenuItem DomainContextFieldId;
     public TextField usernameField;
     public PasswordField passwordField;
+    public CheckBox createDatabaseCheckBox;
 
     private String locationURI;
     private String language;
@@ -128,7 +129,7 @@ public class AppController implements Initializable {
     private boolean isJakarta=false,lombok=false;
     private String endChar;
     private String langExtension;
-
+    //todo daca relatia are mai multe atribute decat doar cheile
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         this.ProjectManager.getItems().setAll("Gradle","Maven");
@@ -374,7 +375,7 @@ public class AppController implements Initializable {
                 else
                     showMessageDialog(null,"The project has been generated!","SUCCESS", JOptionPane.INFORMATION_MESSAGE);
 
-                if(this.DatabaseType.getValue().equals("MariaDB"))
+                if(this.DatabaseType.getValue().equals("MariaDB") && this.createDatabaseCheckBox.isSelected())
                     createTables();
             }
         }
@@ -395,6 +396,12 @@ public class AppController implements Initializable {
                 Connection connection = DriverManager.getConnection(this.DatabaseLink.getText(), usernameField.getText(), passwordField.getText());
                 Statement statement = connection.createStatement();
                 //Pentru siguranta crearii tabelelor mai intai cream domeniile si apoi relatiile
+                //dar mai intai stergem relatiile existente si dupa domeniile de baza
+                for(Domain domain : DomainList.getItems())
+                {
+                    if(domain.isRelation())
+                        statement.execute("DROP TABLE IF EXISTS "+domain.getName().toUpperCase()+";");
+                }
                 for(Domain domain : DomainList.getItems()) {
                     if (!domain.isRelation()) {
                         statement.execute("DROP TABLE IF EXISTS " + domain.getName().toUpperCase() + ";");
@@ -426,7 +433,6 @@ public class AppController implements Initializable {
                 {
                     if(domain.isRelation())
                     {
-                        statement.execute("DROP TABLE IF EXISTS "+domain.getName().toUpperCase()+";");
                         StringBuilder query= new StringBuilder("CREATE TABLE " + domain.getName().toUpperCase() + "(");
                         ArrayList<Pair<String,String>> fields = domain.getFields();
                         ArrayList<String> mariaDBDataTypes = new ArrayList<>();
@@ -441,8 +447,8 @@ public class AppController implements Initializable {
                             else
                                 mariaDBDataTypes.add(pair.getValue().toUpperCase());
                         }
-                        query.append(fields.get(0).getKey()).append(" ").append(mariaDBDataTypes.get(0)).append(",");
-                        query.append(fields.get(1).getKey()).append(" ").append(mariaDBDataTypes.get(1)).append(",");
+                        for(int i=0;i<fields.size();i++)
+                            query.append(fields.get(i).getKey()).append(" ").append(mariaDBDataTypes.get(i)).append(",");
                         query.append("PRIMARY KEY(").append(fields.get(0).getKey()).append(",").append(fields.get(1).getKey()).append("),");
                         Domain domain1 = domain.getFirstDomain();
                         Domain domain2 = domain.getSecondDomain();
@@ -1116,8 +1122,10 @@ public class AppController implements Initializable {
             if(!DatabaseType.getValue().equals("MariaDB")){
                 usernameField.setDisable(true);
                 passwordField.setDisable(true);
+                createDatabaseCheckBox.setDisable(true);
             }
         }
+        DomainContextFieldId.setVisible(true);
         domainAnchorPane.setVisible(false);
         domainAnchorPane.setDisable(true);
         repositoryAnchorPane.setVisible(false);
@@ -1251,7 +1259,15 @@ public class AppController implements Initializable {
                 return;
             }
         }
-        Domain domain = new Domain(DomainField.getText(),new ArrayList<>(domainFieldTable.getItems()));
+        Domain domain,currentDomain=DomainList.getSelectionModel().getSelectedItem();
+        if(currentDomain!=null && currentDomain.isRelation())
+        {
+            domain = new Domain(DomainField.getText(),
+                    new ArrayList<>(domainFieldTable.getItems()),true,
+                    currentDomain.getFirstDomain(),currentDomain.getSecondDomain());
+        }
+        else
+            domain = new Domain(DomainField.getText(),new ArrayList<>(domainFieldTable.getItems()));
         if(relationCombobox.getValue()!=null) {
             Domain domain2 = relationCombobox.getValue();
             if(!RelationField.getText().equals("") && this.DatabaseType.getValue().equals("MariaDB")) {
@@ -1577,6 +1593,9 @@ public class AppController implements Initializable {
                 relationCombobox.setValue(domain.getRelationClass());
             popUp(domainAnchorPane);
             DomainField.setText(domain.getName());
+            if(domain.isRelation()) {
+                DomainContextFieldId.setVisible(false);
+            }
             domainFieldTable.setItems(FXCollections.observableArrayList(domain.getFields()));
         }
     }
@@ -1612,6 +1631,15 @@ public class AppController implements Initializable {
     }
 
     public void onRemoveFieldFromDomain() {
+        if(DomainList.getSelectionModel().getSelectedItem()!=null) {//numai daca obiectul exista
+            if (DomainList.getSelectionModel().getSelectedItem().isRelation() && (this.domainFieldTable.getSelectionModel().getSelectedIndex() == 0 || this.domainFieldTable.getSelectionModel().getSelectedIndex() == 1)) {
+                if (this.language.equals("ro"))//afisam avertismentul asincron, daca facem sincron aparea si MenuItem de stergere pe fereastra de avertisment
+                    new Thread(() -> showMessageDialog(null, "Nu poti modifica o coloana cu cheie straina dintr-o relatie!", "WARNING", JOptionPane.WARNING_MESSAGE)).start();
+                else
+                    new Thread(() -> showMessageDialog(null, "You can't modify a foreign key from a relation!", "WARNING", JOptionPane.WARNING_MESSAGE)).start();
+                return;
+            }
+        }
         this.domainFieldTable.getItems().remove(this.domainFieldTable.getSelectionModel().getSelectedItem());
     }
     public void onMakeId() {
@@ -1626,6 +1654,7 @@ public class AppController implements Initializable {
         this.addRepositoryButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
         this.usernameField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.passwordField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
+        this.createDatabaseCheckBox.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.DomainList.getItems().clear();
         this.domainCombobox.getItems().clear();
         this.relationCombobox.getItems().clear();
@@ -1723,6 +1752,7 @@ public class AppController implements Initializable {
         this.DomainContextFieldId.setText("Make it ID");
         this.usernameField.setPromptText("MariaDB Username");
         this.passwordField.setPromptText("MariaDB Password");
+        this.createDatabaseCheckBox.setText("Create Database");
     }
 
     public void onRomanianClick() {
@@ -1794,6 +1824,7 @@ public class AppController implements Initializable {
         this.DomainContextFieldId.setText("Declară-l identificator unic");
         this.usernameField.setPromptText("Nume de utilizator MariaDB");
         this.passwordField.setPromptText("Parolă MariaDB");
+        this.createDatabaseCheckBox.setText("Creare Baza de date");
     }
 
     public void onFinishedSearch() {

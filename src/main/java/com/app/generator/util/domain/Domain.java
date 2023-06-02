@@ -63,7 +63,6 @@ public class Domain {
     {
         return getName();//facem override ca sa apara la listview doar numele, fara alte detalii
     }
-
     public void write(String domainsURI,String lang,boolean isJakarta,boolean lombok,String database) throws IOException {
         String[] parts=domainsURI.split("\\\\");
         boolean langFolderFound=false;
@@ -127,18 +126,17 @@ public class Domain {
             {
                 picoWriter.writeln("@IdClass("+nameCap+"Id::class)");
                 picoWriter.writeln_r("class "+nameCap+"(");
-                for(Pair<String,String> field:fields)
-                {
-                    picoWriter.writeln("@NotNull");
-                    picoWriter.writeln("@Id");
-                    picoWriter.writeln("var "+field.getKey()+": "+field.getValue()+"? = null,");
+                for (Pair<String, String> field : fields) {
+                    if (fields.indexOf(field)==0 || fields.indexOf(field)==1)
+                        picoWriter.writeln("@Id");
+                    picoWriter.writeln("var " + field.getKey() + ": " + field.getValue() + "? = null,");
                     picoWriter.writeln("");
                 }
                 picoWriter.writeln_l("): Serializable");
                 picoWriter.writeln_r("class "+nameCap+"Id : Serializable{");
-                for(Pair<String,String> field:fields)
+                for(int i=0;i<=1;i++)
                 {
-                    picoWriter.writeln("@NotNull");
+                    Pair<String,String> field = fields.get(i);
                     picoWriter.writeln("@Id");
                     picoWriter.writeln("var "+field.getKey()+": "+field.getValue()+"? = null");
                 }
@@ -148,50 +146,20 @@ public class Domain {
                 if(database.equals("MariaDB"))
                     picoWriter.writeln_r("class "+nameCap+"(");
                 else {
-                    picoWriter.writeln_r("open class " + nameCap + "{");
-                    picoWriter.writeln("@NotNull");
+                    picoWriter.writeln_r("open class " + nameCap + "(");
                 }
 
                 picoWriter.writeln("@Id");
                 for (Pair<String, String> field : fields) {
-                    if(database.equals("MariaDB"))
-                        picoWriter.writeln("var "+field.getKey()+": "+field.getValue()+"? = null,");
-                    else
-                        picoWriter.writeln("var "+field.getKey()+": "+field.getValue()+"? = null");
+                    picoWriter.writeln("var "+field.getKey()+": "+field.getValue()+"? = null,");
                     picoWriter.writeln("");
                 }
                 if(relationClass!=null)
                 {
-                    picoWriter.writeln("@DocumentReference(lazy = true)");
+                    picoWriter.writeln("@DocumentReference");
                     picoWriter.writeln("var "+relationClass.getName().toLowerCase()+": "+StringUtils.capitalize(relationClass.getName())+"? = null");
                 }
-                if(!database.equals("MariaDB")) {
-                    StringBuilder params = new StringBuilder();
-                    for (Pair<String, String> field : fields) {
-                        params.append(field.getKey()).append(": ").append(field.getValue()).append(",");
-                    }
-                    params.deleteCharAt(params.length() - 1);
-                    picoWriter.writeln_r("constructor(" + params + "){");
-                    for (Pair<String, String> field : fields) {
-                        picoWriter.writeln("this." + field.getKey() + " = " + field.getKey());
-                    }
-                    picoWriter.writeln_l("}");
-                    if(relationClass!=null)
-                    {
-                        params.append(",").append(relationClass.getName().toLowerCase()).append(":")
-                                .append(StringUtils.capitalize(relationClass.getName()));
-                        picoWriter.writeln_r("constructor(" + params + "){");
-                        for (Pair<String, String> field : fields) {
-                            picoWriter.writeln("this." + field.getKey() + " = " + field.getKey());
-                        }
-                        picoWriter.writeln("this." + relationClass.getName().toLowerCase()
-                                + " = " + relationClass.getName().toLowerCase());
-                        picoWriter.writeln_l("}");
-                    }
-                    picoWriter.writeln_l("}");
-                }
-                else
-                    picoWriter.writeln_l(")");
+                picoWriter.writeln_l(")");
             }
         }
         else{
@@ -235,7 +203,8 @@ public class Domain {
                 picoWriter.writeln_r("public class "+nameCap+" implements Serializable{");
                 for(Pair<String,String> field:fields)
                 {
-                    picoWriter.writeln("@Id");
+                    if(fields.indexOf(field)==0 || fields.indexOf(field)==1)
+                        picoWriter.writeln("@Id");
                     picoWriter.writeln("private "+field.getValue()+" "+field.getKey()+";");
                     picoWriter.writeln("");
                 }
@@ -269,8 +238,9 @@ public class Domain {
                 picoWriter.writeln_l("}");
                 picoWriter.writeln("");
                 picoWriter.writeln_r("class "+nameCap+"Id implements Serializable{");
-                for(Pair<String,String> field:fields)
+                for(int i=0;i<=1;i++)
                 {
+                    Pair<String,String> field = fields.get(i);
                     picoWriter.writeln("@Id");
                     picoWriter.writeln("private "+field.getValue()+" "+field.getKey()+";");
                     picoWriter.writeln("");
@@ -312,7 +282,7 @@ public class Domain {
                 {
                     String relationName= StringUtils.capitalize(relationClass.getName());
                     String variableName = StringUtils.uncapitalize(relationClass.getName());
-                    picoWriter.writeln("@DocumentReference(lazy = true)");
+                    picoWriter.writeln("@DocumentReference");
                     picoWriter.writeln("private "+relationName+" "+variableName+";");
                     if(!lombok) {
                         picoWriter.writeln_r("public " + relationName + " get" + relationName + "(){");
