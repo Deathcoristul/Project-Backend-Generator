@@ -129,7 +129,6 @@ public class AppController implements Initializable {
     private boolean isJakarta=false,lombok=false;
     private String endChar;
     private String langExtension;
-    //todo daca relatia are mai multe atribute decat doar cheile
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         this.ProjectManager.getItems().setAll("Gradle","Maven");
@@ -286,7 +285,7 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "Pentru versiunea "+this.SpringBootVersion.getValue()+", atributele de tip UUID nu vor funcționa la fel de bine ca în versiunea 3!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            if(this.DatabaseType.getValue().equals("MariaDB"))
+            if(this.DatabaseType.getValue()!= null && this.DatabaseType.getValue().equals("MariaDB"))
             {
                 if(this.usernameField.getText().equals("") || this.passwordField.getText().equals("")){
                     showMessageDialog(null, "Lipsesc credențiale pentru MariaDB!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
@@ -329,7 +328,7 @@ public class AppController implements Initializable {
                 showMessageDialog(null, "For Spring Boot version "+this.SpringBootVersion.getValue()+", UUID attributes won't work well like in version 3!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
-            if(this.DatabaseType.getValue().equals("MariaDB"))
+            if(this.DatabaseType.getValue()!= null && this.DatabaseType.getValue().equals("MariaDB"))
             {
                 if(this.usernameField.getText().equals("") || this.passwordField.getText().equals("")){
                     showMessageDialog(null, "Missing credentials for MariaDB!", "WARNING", JOptionPane.WARNING_MESSAGE);

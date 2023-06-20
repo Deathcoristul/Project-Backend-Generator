@@ -24,17 +24,6 @@
             <version>11.0.2</version>
         </dependency>
         <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-web</artifactId>
-            <version>11.0.2</version>
-        </dependency>
-        <dependency>
-            <groupId>org.controlsfx</groupId>
-            <artifactId>controlsfx</artifactId>
-            <version>11.1.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>${junit.version}</version>
@@ -51,7 +40,7 @@
             <groupId>org.ainslec</groupId>
             <artifactId>picocog</artifactId>
             <version>1.0.7</version>
-        </dependency>
+        </dependency><!--scriere si identare cod-->
         <dependency>
             <groupId>org.mariadb.jdbc</groupId>
             <artifactId>mariadb-java-client</artifactId>
@@ -64,19 +53,9 @@
         </dependency><!-- pentru capitalizare-->
         <dependency>
             <groupId>io.spring.initializr</groupId>
-            <artifactId>initializr-web</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.spring.initializr</groupId>
             <artifactId>initializr-generator-spring</artifactId>
+            <version>0.13.0</version><!--pentru Gradle-->
         </dependency>
-        <dependency>
-            <groupId>org.gradle</groupId>
-            <artifactId>gradle-tooling-api</artifactId>
-            <version>7.3-20210825160000+0000</version>
-            <scope>runtime</scope>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-model</artifactId>
@@ -93,17 +72,6 @@
             <version>20230227</version><!--pentru utilizarea claselor JSON-->
         </dependency>
     </dependencies>
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>io.spring.initializr</groupId>
-                <artifactId>initializr-bom</artifactId>
-                <version>0.13.0</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
     <build>
         <plugins>
             <plugin>

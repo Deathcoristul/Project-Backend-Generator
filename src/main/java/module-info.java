@@ -1,8 +1,6 @@
 module com.app.generator {
     requires javafx.controls;
     requires javafx.fxml;
-    requires javafx.web;
-    requires org.controlsfx.controls;
     requires org.json;
     requires java.desktop;
     requires org.ainslec.picocog;
