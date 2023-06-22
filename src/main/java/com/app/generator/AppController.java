@@ -52,16 +52,24 @@ public class AppController implements Initializable {
     public Button repositoryCancelButton;
     public Button serviceCancelButton;
     public Button controllerCancelButton;
+    public Button button_addRepository;
+    public Button button_addService;
+    public Button button_addField;
+    public Button addDependencyButton;
     public TableView<Pair<String,String>> domainFieldTable;
     public TableColumn<Pair<String,String>,String> columnName;
     public TableColumn<Pair<String,String>,String> columnType;
     public TextField fieldTextField;
+    public TextField RelationField;
+    public TextField ProjectName;
+    public TextField Group;
+    public TextField PackageName;
+    public TextField Description;
+    public TextField Artifact;
     public ComboBox<String> typeCombobox=new ComboBox<>();
     public ComboBox<Domain> domainCombobox=new ComboBox<>();
     public ComboBox<Repository> repositoryCombobox=new ComboBox<>();
     public ComboBox<Service> serviceCombobox=new ComboBox<>();
-    public Button button_addRepository;
-    public Button button_addService;
     public ListView<Repository> serviceRepositoryList;
     public ListView<Service> controllerServiceList;
     public MenuItem DependencyContextUpdate;
@@ -77,29 +85,21 @@ public class AppController implements Initializable {
     public MenuItem DomainContextFieldDelete;
     public MenuItem ServiceContextRepositoryDelete;
     public MenuItem ControllerContextServiceDelete;
-    public Button button_addField;
-    public TextField RelationField;
     public ComboBox<Domain> relationCombobox=new ComboBox<>();
     public ComboBox<String> SpringBootVersion;
     public ComboBox<String> ProjectManager;
     public ComboBox<String> Language;
-    public TextField ProjectName;
-    public TextField Group;
-    public TextField PackageName;
     public ComboBox<Integer> JavaVersion;
-    public TextField Description;
-    public TextField Artifact;
     public ComboBox<String> PackageType;
-    public Button addDependencyButton;
     public ListView<Dependency> DependenciesList;
     public ListView<Repository> RepositoriesList;
+    public ListView<Service> ServicesList;
+    public ListView<Controller> ControllerList;
     public ListView<Domain> DomainList;
     public TextField RepositoryField;
     public TextField ServiceField;
     public TextField ControllerField;
     public TextField DomainField;
-    public ListView<Service> ServicesList;
-    public ListView<Controller> ControllerList;
     public Button GenerateButton;
     public Button addControllerButton;
     public Button addDomainButton;
@@ -574,7 +574,7 @@ public class AppController implements Initializable {
             writer.close();
         }
 
-        //la versiunea 3.x.x trebuie sa includem si un wrapper pentru a nu avea probleme la descarcare si injectare
+
         File f=new File(locationURI+"\\gradle");
         f.mkdir();
         f=new File(locationURI+"\\gradle\\wrapper");
@@ -1118,7 +1118,7 @@ public class AppController implements Initializable {
                 addDomainButton.setDisable(true);
                 addRepositoryButton.setDisable(true);
             }
-            if(!DatabaseType.getValue().equals("MariaDB")){
+            if(DatabaseType.getValue()==null || !DatabaseType.getValue().equals("MariaDB")){
                 usernameField.setDisable(true);
                 passwordField.setDisable(true);
                 createDatabaseCheckBox.setDisable(true);

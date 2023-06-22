@@ -14,20 +14,12 @@ public class Domain {
     private boolean isRelation=false;
     private Domain relationClass=null;
     private Domain firstDomain=null;
-
-    public Domain getFirstDomain() {
-        return firstDomain;
-    }
-
-    public Domain getSecondDomain() {
-        return secondDomain;
-    }
-
     private Domain secondDomain=null;
-    public Domain getRelationClass() {
-        return relationClass;
-    }
 
+    public Domain(String name, ArrayList<Pair<String, String>> fields) {
+        this.name=name;
+        this.fields = fields;
+    }
 
     public Domain(String name, ArrayList<Pair<String, String>> fields, Domain relationClass) {// pentru mongo
         this.name = name;
@@ -42,15 +34,22 @@ public class Domain {
         this.firstDomain=firstDomain;
         this.secondDomain=secondDomain;
     }
+    public Domain getFirstDomain() {
+        return firstDomain;
+    }
+
+    public Domain getSecondDomain() {
+        return secondDomain;
+    }
+
+    public Domain getRelationClass() {
+        return relationClass;
+    }
 
     public boolean isRelation() {
         return isRelation;
     }
 
-    public Domain(String name, ArrayList<Pair<String, String>> fields) {
-        this.name=name;
-        this.fields = fields;
-    }
     public ArrayList<Pair<String, String>> getFields() {
         return fields;
     }

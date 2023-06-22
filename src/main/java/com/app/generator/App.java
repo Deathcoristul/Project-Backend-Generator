@@ -15,13 +15,15 @@ public class App extends Application {
             FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("view.fxml"));
             Scene scene = new Scene(fxmlLoader.load());
             stage.setScene(scene);
+            stage.show();
+            stage.setResizable(false);
+            stage.setTitle("Project Generator");
         }
         catch (Exception ex)
         {
             System.err.println("No fxml file!");
+            System.exit(-1);
         }
-
-        stage.setTitle("Project Generator");
         try {
             stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("icon.png"))));
         }
@@ -29,8 +31,7 @@ public class App extends Application {
         {
             System.err.println("No icon!");
         }
-        stage.setResizable(false);
-        stage.show();
+
     }
 
     public static void main(String[] args) {
