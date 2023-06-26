@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.paint.*?>
+<?import javafx.scene.text.*?>
+
+<AnchorPane fx:id="mainAnchorPane" prefHeight="683.0" prefWidth="684.0" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.app.generator.AppController">
+   <Label alignment="CENTER" prefHeight="60.0" prefWidth="684.0" style="-fx-background-color: #0f5401;" text="Project Generator" textAlignment="CENTER" textOverrun="CLIP" wrapText="true">
+      <font>
+         <Font name="Bauhaus 93" size="46.0" />
+      </font>
+      <textFill>
+         <LinearGradient cycleMethod="REFLECT" endX="0.6259541547935427" endY="0.20992364865222962">
+            <stops>
+               <Stop>
+                  <color>
+                     <Color green="1.0" blue="0.0117647061124444" />
+                  </color>
+               </Stop>
+               <Stop offset="1.0">
+                  <color>
+                     <Color red="1.0" green="1.0" blue="1.0" />
+                  </color>
+               </Stop>
+            </stops>
+         </LinearGradient>
+      </textFill>
+   </Label>
+   <ComboBox fx:id="SpringBootVersion" layoutX="14.0" layoutY="143.0" prefHeight="26.0" prefWidth="162.0" promptText="Versiune Spring" stylesheets="@styles.css" />
+   <ComboBox fx:id="ProjectManager" layoutX="14.0" layoutY="74.0" prefHeight="26.0" prefWidth="162.0" promptText="Gestionar de proiect" stylesheets="@styles.css" />
+   <ComboBox fx:id="Language" layoutX="14.0" layoutY="108.0" prefHeight="26.0" prefWidth="161.0" promptText="Limbaj de programare" stylesheets="@styles.css" />
+   <TextField fx:id="ProjectName" layoutX="353.0" layoutY="74.0" promptText="Nume proiect" stylesheets="@styles.css" />
+   <TextField fx:id="Group" layoutX="192.0" layoutY="74.0" onKeyTyped="#onGroupOrArtifactTextChanged" promptText="Grup" stylesheets="@styles.css" />
+   <TextField fx:id="PackageName" layoutX="520.0" layoutY="74.0" prefHeight="26.0" prefWidth="150.0" promptText="Nume pachet" stylesheets="@styles.css" />
+   <ComboBox fx:id="JavaVersion" layoutX="520.0" layoutY="108.0" prefWidth="150.0" promptText="Versiune Java" stylesheets="@styles.css" />
+   <TextField fx:id="Description" layoutX="353.0" layoutY="108.0" promptText="Descriere" stylesheets="@styles.css" />
+   <TextField fx:id="Artifact" layoutX="192.0" layoutY="108.0" onKeyTyped="#onGroupOrArtifactTextChanged" promptText="Artefact" stylesheets="@styles.css" />
+   <ComboBox fx:id="PackageType" layoutX="520.0" layoutY="143.0" prefWidth="150.0" promptText="Împachetare" stylesheets="@styles.css" />
+   <Button fx:id="addDependencyButton" layoutX="193.0" layoutY="143.0" mnemonicParsing="false" onAction="#onAddDependency" prefHeight="27.0" prefWidth="310.0" stylesheets="@styles.css" text="Adaugă dependință" />
+   <ListView fx:id="DependenciesList" layoutX="192.0" layoutY="198.0" prefHeight="119.0" prefWidth="310.0" stylesheets="@styles.css">
+      <contextMenu>
+         <ContextMenu>
+            <items>
+               <MenuItem fx:id="DependencyContextUpdate" mnemonicParsing="false" onAction="#onUpdateDependency" text="Modifică" />
+               <MenuItem fx:id="DependencyContextDelete" mnemonicParsing="false" onAction="#onRemoveDependency" text="Șterge" />
+            </items>
+         </ContextMenu>
+      </contextMenu>
+   </ListView>
+   <Label fx:id="DependencyLabel" layoutX="192.0" layoutY="170.0" prefHeight="27.0" prefWidth="126.0" text="Dependințe">
+      <font>
+         <Font size="18.0" />
+      </font>
+   </Label>
+   <Label fx:id="RepositoryLabel" layoutX="520.0" layoutY="170.0" prefHeight="27.0" prefWidth="102.0" text="Repozitorii">
+      <font>
+         <Font size="18.0" />
+      </font>
+   </Label>
+   <ListView fx:id="RepositoriesList" layoutX="521.0" layoutY="198.0" prefHeight="119.0" prefWidth="150.0" stylesheets="@styles.css">
+      <contextMenu>
+         <ContextMenu>
+            <items>
+               <MenuItem fx:id="RepositoryContextUpdate" mnemonicParsing="false" onAction="#onUpdateRepository" text="Modifică" />
+               <MenuItem fx:id="RepositoryContextDelete" mnemonicParsing="false" onAction="#onRemoveRepository" text="Șterge" />
+            </items>
+         </ContextMenu>
+      </contextMenu>
+   </ListView>
+
+   <ListView fx:id="DomainList" layoutX="14.0" layoutY="198.0" prefHeight="119.0" prefWidth="162.0" stylesheets="@styles.css">
+      <contextMenu>
+         <ContextMenu>
+            <items>
+               <MenuItem fx:id="DomainContextUpdate" mnemonicParsing="false" onAction="#onUpdateDomain" text="Modifică" />
+               <MenuItem fx:id="DomainContextDelete" mnemonicParsing="false" onAction="#onRemoveDomain" text="Șterge" />
+            </items>
+         </ContextMenu>
+      </contextMenu>
+   </ListView>
+   <Label fx:id="DomainLabel" layoutX="14.0" layoutY="170.0" text="Domenii">
+      <font>
+         <Font size="18.0" />
+      </font>
+   </Label>
+   <Label fx:id="ServiceLabel" layoutX="14.0" layoutY="428.0" text="Servicii">
+      <font>
+         <Font size="18.0" />
+      </font>
+   </Label>
+   <Label fx:id="ControllerLabel" layoutX="353.0" layoutY="428.0" text="Controller-e">
+      <font>
+         <Font size="18.0" />
+      </font>
+   </Label>
+   <ListView fx:id="ServicesList" layoutX="14.0" layoutY="455.0" prefHeight="110.0" prefWidth="326.0" stylesheets="@styles.css">
+      <contextMenu>
+         <ContextMenu>
+            <items>
+               <MenuItem fx:id="ServiceContextUpdate" mnemonicParsing="false" onAction="#onUpdateService" text="Modifică" />
+               <MenuItem fx:id="ServiceContextDelete" mnemonicParsing="false" onAction="#onRemoveService" text="Șterge" />
+            </items>
+         </ContextMenu>
+      </contextMenu>
+   </ListView>
+   <ListView fx:id="ControllerList" layoutX="353.0" layoutY="455.0" prefHeight="110.0" prefWidth="318.0" stylesheets="@styles.css">
+      <contextMenu>
+         <ContextMenu>
+            <items>
+               <MenuItem fx:id="ControllerContextUpdate" mnemonicParsing="false" onAction="#onUpdateController" text="Modifică" />
+               <MenuItem fx:id="ControllerContextDelete" mnemonicParsing="false" onAction="#onRemoveController" text="Șterge" />
+            </items>
+         </ContextMenu>
+      </contextMenu>
+   </ListView>
+   <Button fx:id="GenerateButton" alignment="CENTER" layoutX="12.0" layoutY="609.0" mnemonicParsing="false" onAction="#onGenerate" prefHeight="41.0" prefWidth="658.0" stylesheets="@styles.css" text="Generează" textAlignment="CENTER" textOverrun="CLIP">
+      <font>
+         <Font name="System Bold" size="27.0" />
+      </font>
+   </Button>
+   <Button fx:id="addControllerButton" layoutX="353.0" layoutY="396.0" mnemonicParsing="false" onAction="#onAddController" prefHeight="27.0" prefWidth="318.0" stylesheets="@styles.css" text="Adaugă controller" />
+   <Button fx:id="addDomainButton" disable="true" layoutX="14.0" layoutY="327.0" mnemonicParsing="false" onAction="#onAddDomain" prefHeight="27.0" prefWidth="326.0" stylesheets="@styles.css" text="Adaugă domeniu" />
+   <Button fx:id="addServiceButton" layoutX="15.0" layoutY="396.0" mnemonicParsing="false" onAction="#onAddService" prefHeight="27.0" prefWidth="326.0" stylesheets="@styles.css" text="Adaugă serviciu" />
+   <Button fx:id="addRepositoryButton" disable="true" layoutX="353.0" layoutY="327.0" mnemonicParsing="false" onAction="#onAddRepository" prefHeight="27.0" prefWidth="318.0" stylesheets="@styles.css" text="Adaugă repozitoriu" />
+   <TextField fx:id="DatabaseLink" layoutX="14.0" layoutY="361.5" prefHeight="26.0" prefWidth="326.0" promptText="Link către bază de date" stylesheets="@styles.css" />
+   <ComboBox fx:id="DatabaseType" layoutX="353.0" layoutY="361.5" onAction="#onDatabaseTypeChanged" prefHeight="26.0" prefWidth="318.0" promptText="Tip bază de date" stylesheets="@styles.css" />
+   <ImageView fx:id="englishButton" fitHeight="26.0" fitWidth="48.0" layoutX="583.0" layoutY="30.0" onMouseClicked="#onEnglishClick" pickOnBounds="true">
+      <Image url="@uk.png" />
+   </ImageView>
+   <ImageView fx:id="romaniaButton" fitHeight="26.0" fitWidth="48.0" layoutX="631.0" layoutY="30.0" onMouseClicked="#onRomanianClick" pickOnBounds="true">
+      <Image url="@ro.png" />
+   </ImageView>
+   <AnchorPane fx:id="domainAnchorPane" disable="true" layoutX="221.0" layoutY="151.0" prefHeight="380.0" prefWidth="254.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+      <children>
+         <Button fx:id="domainCancelButton" layoutX="159.0" layoutY="338.0" minWidth="-Infinity" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
+         <Button layoutX="26.0" layoutY="338.0" mnemonicParsing="false" onAction="#OK_Domain" text="OK" />
+         <TextField fx:id="DomainField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Nume domeniu" stylesheets="@styles.css" />
+         <TableView fx:id="domainFieldTable" layoutX="26.0" layoutY="144.0" prefHeight="92.0" prefWidth="202.0">
+           <columns>
+             <TableColumn fx:id="columnName" prefWidth="104.0" text="Nume" />
+             <TableColumn fx:id="columnType" prefWidth="96.4000244140625" text="Tip" />
+           </columns>
+            <contextMenu>
+               <ContextMenu>
+                  <items>
+                     <MenuItem fx:id="DomainContextFieldId" mnemonicParsing="false" onAction="#onMakeId" text="Declară-l identificator unic" />
+                     <MenuItem fx:id="DomainContextFieldDelete" mnemonicParsing="false" onAction="#onRemoveFieldFromDomain" text="Șterge" />
+                  </items>
+               </ContextMenu>
+            </contextMenu>
+         </TableView>
+         <TextField fx:id="fieldTextField" layoutX="26.0" layoutY="54.0" prefHeight="26.0" prefWidth="96.0" promptText="Nume atribut" />
+         <ComboBox fx:id="typeCombobox" layoutX="124.0" layoutY="54.0" prefHeight="26.0" prefWidth="102.0" promptText="Tip atribut" />
+         <Button fx:id="button_addField" layoutX="26.0" layoutY="94.0" mnemonicParsing="false" onAction="#onAddField" prefHeight="27.0" prefWidth="202.0" text="Adaugă atribut" />
+         <TextField fx:id="RelationField" disable="true" layoutX="26.0" layoutY="251.0" prefHeight="26.0" prefWidth="202.0" promptText="Nume relație" />
+         <ComboBox fx:id="relationCombobox" layoutX="26.0" layoutY="294.0" prefHeight="26.0" prefWidth="202.0" promptText="Relație" />
+      </children>
+   </AnchorPane>
+   <AnchorPane fx:id="repositoryAnchorPane" disable="true" layoutX="262.0" layoutY="261.0" prefHeight="159.0" prefWidth="170.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+      <children>
+         <Button fx:id="repositoryCancelButton" layoutX="86.0" layoutY="108.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
+         <Button layoutX="26.0" layoutY="108.0" mnemonicParsing="false" onAction="#OK_Repository" text="OK" />
+         <TextField fx:id="RepositoryField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="126.0" promptText="Nume repositoriu" stylesheets="@styles.css" />
+         <ComboBox fx:id="domainCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="126.0" promptText="Domeniu" />
+      </children>
+   </AnchorPane>
+   <AnchorPane fx:id="serviceAnchorPane" disable="true" layoutX="202.0" layoutY="219.0" prefHeight="243.0" prefWidth="289.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+      <children>
+         <Button fx:id="serviceCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
+         <Button layoutX="26.0" layoutY="203.0" mnemonicParsing="false" onAction="#OK_Service" text="OK" />
+         <TextField fx:id="ServiceField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume serviciu" stylesheets="@styles.css" />
+         <ComboBox fx:id="repositoryCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="109.0" promptText="Repositoriu" />
+         <Button fx:id="button_addRepository" layoutX="147.0" layoutY="56.0" mnemonicParsing="false" onAction="#onAddRepositoryInService" prefHeight="27.0" prefWidth="126.0" text="Adaugă repositoriu" />
+         <ListView fx:id="serviceRepositoryList" layoutX="26.0" layoutY="97.0" prefHeight="92.0" prefWidth="246.0">
+         <contextMenu>
+            <ContextMenu>
+               <items>
+                  <MenuItem fx:id="ServiceContextRepositoryDelete" mnemonicParsing="false" onAction="#onRemoveRepositoryFromService" text="Șterge" />
+               </items>
+            </ContextMenu>
+         </contextMenu>
+         </ListView>
+      </children>
+   </AnchorPane>
+   <AnchorPane fx:id="controllerAnchorPane" disable="true" layoutX="203.0" layoutY="205.0" prefHeight="243.0" prefWidth="289.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+      <children>
+         <Button fx:id="controllerCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
+         <Button layoutX="26.0" layoutY="203.0" mnemonicParsing="false" onAction="#OK_Controller" text="OK" />
+         <TextField fx:id="ControllerField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume controller" stylesheets="@styles.css" />
+         <ComboBox fx:id="serviceCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="102.0" promptText="Serviciu" />
+         <Button fx:id="button_addService" layoutX="147.0" layoutY="56.0" mnemonicParsing="false" onAction="#onAddServiceInController" prefHeight="27.0" prefWidth="126.0" text="Adaugă serviciu" />
+         <ListView fx:id="controllerServiceList" layoutX="26.0" layoutY="97.0" prefHeight="92.0" prefWidth="246.0">
+            <contextMenu>
+               <ContextMenu>
+                  <items>
+                     <MenuItem fx:id="ControllerContextServiceDelete" mnemonicParsing="false" onAction="#onRemoveServiceFromController" text="Șterge" />
+                  </items>
+               </ContextMenu>
+            </contextMenu>
+         </ListView>
+      </children>
+   </AnchorPane>
+   <AnchorPane fx:id="dependencyAnchorPane" disable="true" layoutX="96.0" layoutY="93.0" prefHeight="436.0" prefWidth="492.0" style="-fx-background-color: white;" styleClass="pane" visible="false">
+      <children>
+         <Button fx:id="dependencyCancelButton" layoutX="399.0" layoutY="394.0" minWidth="-Infinity" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
+         <Button fx:id="dependencyOKButton" layoutX="26.0" layoutY="394.0" mnemonicParsing="false" onAction="#OK_Dependency" text="OK" />
+         <TextField fx:id="dependencyGroupField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Grup" stylesheets="@styles.css" />
+         <TextField fx:id="dependencyArtifactField" layoutX="26.0" layoutY="54.0" prefHeight="26.0" prefWidth="202.0" promptText="Artefact" />
+         <ComboBox fx:id="dependencyOptionalCombobox" layoutX="264.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Optional" />
+         <TextField fx:id="dependencyTypeField" layoutX="264.0" layoutY="94.0" prefHeight="26.0" prefWidth="202.0" promptText="Tip" />
+         <ComboBox fx:id="dependencyScopeCombobox" layoutX="264.0" layoutY="54.0" prefHeight="26.0" prefWidth="202.0" promptText="Scop" />
+         <TextField fx:id="dependencyVersionField" layoutX="26.0" layoutY="94.0" prefHeight="26.0" prefWidth="202.0" promptText="Versiune" />
+         <TextField fx:id="searchBar" layoutX="26.0" layoutY="156.0" onAction="#onFinishedSearch" prefHeight="26.0" prefWidth="440.0" promptText="Caută dependința" />
+         <Separator layoutX="26.0" layoutY="137.0" prefHeight="1.0" prefWidth="440.0" />
+         <ListView fx:id="dependencySearchListView" layoutX="26.0" layoutY="196.0" onMouseClicked="#onSelectDependency" prefHeight="180.0" prefWidth="440.0" />
+      </children>
+   </AnchorPane>
+   <TextField fx:id="usernameField" disable="true" layoutX="14.0" layoutY="574.0" prefHeight="26.0" prefWidth="223.0" promptText="Nume de utilizator MariaDB" />
+   <PasswordField fx:id="passwordField" disable="true" layoutX="247.0" layoutY="574.0" prefHeight="26.0" prefWidth="223.0" promptText="Parolă MariaDB" />
+   <CheckBox fx:id="createDatabaseCheckBox" disable="true" layoutX="529.0" layoutY="578.0" mnemonicParsing="false" prefHeight="18.0" prefWidth="136.0" text="Creare Baza de date" textAlignment="CENTER" />
+</AnchorPane>
