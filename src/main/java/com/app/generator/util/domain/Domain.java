@@ -189,6 +189,8 @@ public class Domain {
                 picoWriter.writeln("import lombok.*;");
                 picoWriter.writeln("");
                 picoWriter.writeln("@Data");
+                picoWriter.writeln("@AllArgsConstructor");
+                picoWriter.writeln("@NoArgsConstructor");
             }
             if(database.equals("MariaDB")) {
                 picoWriter.writeln("@Entity");
@@ -207,19 +209,19 @@ public class Domain {
                     picoWriter.writeln("private "+field.getValue()+" "+field.getKey()+";");
                     picoWriter.writeln("");
                 }
-                StringBuilder params = new StringBuilder();
-                for(Pair<String,String> field : fields)
-                {
-                    params.append(field.getValue()).append(" ").append(field.getKey()).append(",");
-                }
-                params.deleteCharAt(params.length()-1);
-                picoWriter.writeln_r("public "+nameCap+"("+params+"){");
-                for(Pair<String,String> field : fields)
-                {
-                    picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
-                }
-                picoWriter.writeln_l("}");
                 if(!lombok) {
+                    StringBuilder params = new StringBuilder();
+                    for(Pair<String,String> field : fields)
+                    {
+                        params.append(field.getValue()).append(" ").append(field.getKey()).append(",");
+                    }
+                    params.deleteCharAt(params.length()-1);
+                    picoWriter.writeln_r("public "+nameCap+"("+params+"){");
+                    for(Pair<String,String> field : fields)
+                    {
+                        picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
+                    }
+                    picoWriter.writeln_l("}");
                     for (Pair<String, String> field : fields) {
                         picoWriter.writeln_r("public " + field.getValue() + " get" + StringUtils.capitalize(field.getKey()) + "(){");
                         picoWriter.writeln("return this."+field.getKey()+";");
@@ -231,9 +233,10 @@ public class Domain {
                         picoWriter.writeln_l("}");
                         picoWriter.writeln("");
                     }
+                    picoWriter.writeln_r("public "+nameCap+"(){");
+                    picoWriter.writeln_l("}");
                 }
-                picoWriter.writeln_r("public "+nameCap+"(){");
-                picoWriter.writeln_l("}");
+
                 picoWriter.writeln_l("}");
                 picoWriter.writeln("");
                 picoWriter.writeln_r("class "+nameCap+"Id implements Serializable{");
@@ -258,13 +261,13 @@ public class Domain {
                     params.append(field.getValue()).append(" ").append(field.getKey()).append(",");
                 }
                 params.deleteCharAt(params.length()-1);
-                picoWriter.writeln_r("public "+nameCap+"("+params+"){");
-                for(Pair<String,String> field : fields)
-                {
-                    picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
-                }
-                picoWriter.writeln_l("}");
                 if(!lombok) {
+                    picoWriter.writeln_r("public "+nameCap+"("+params+"){");
+                    for(Pair<String,String> field : fields)
+                    {
+                        picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
+                    }
+                    picoWriter.writeln_l("}");
                     for (Pair<String, String> field : fields) {
                         picoWriter.writeln_r("public " + field.getValue() + " get" + StringUtils.capitalize(field.getKey()) + "(){");
                         picoWriter.writeln("return this."+field.getKey()+";");
@@ -276,6 +279,8 @@ public class Domain {
                         picoWriter.writeln_l("}");
                         picoWriter.writeln("");
                     }
+                    picoWriter.writeln_r("public "+nameCap+"(){");
+                    picoWriter.writeln_l("}");
                 }
                 if(relationClass!=null)
                 {
@@ -292,20 +297,18 @@ public class Domain {
                         picoWriter.writeln("this."+variableName+"="+variableName+";");
                         picoWriter.writeln_l("}");
                         picoWriter.writeln("");
+                        params.append(",").append(StringUtils.capitalize(relationClass.getName())).append(" ")
+                                .append(StringUtils.uncapitalize(relationClass.getName()));
+                        picoWriter.writeln_r("public "+nameCap+"("+params+"){");
+                        for(Pair<String,String> field : fields)
+                        {
+                            picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
+                        }
+                        picoWriter.writeln("this."+variableName +" = "+variableName+";");
+                        picoWriter.writeln_l("}");
                     }
-                    params.append(",").append(StringUtils.capitalize(relationClass.getName())).append(" ")
-                            .append(StringUtils.uncapitalize(relationClass.getName()));
-                    picoWriter.writeln_r("public "+nameCap+"("+params+"){");
-                    for(Pair<String,String> field : fields)
-                    {
-                        picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
-                    }
-                    picoWriter.writeln("this."+variableName +" = "+variableName+";");
-                    picoWriter.writeln_l("}");
                 }
                 picoWriter.writeln("");
-                picoWriter.writeln_r("public "+nameCap+"(){");
-                picoWriter.writeln_l("}");
             }
             picoWriter.writeln_l("}");
         }
