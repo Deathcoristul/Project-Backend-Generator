@@ -574,12 +574,12 @@ public class AppController implements Initializable {
             writer.close();
         }
 
-
+        PicoWriter picoWriter=new PicoWriter();
         File f=new File(locationURI+"\\gradle");
         f.mkdir();
         f=new File(locationURI+"\\gradle\\wrapper");
         f.mkdir();
-        PicoWriter picoWriter=new PicoWriter();
+
         picoWriter.writeln("distributionBase=GRADLE_USER_HOME");
         picoWriter.writeln("distributionPath=wrapper/dists");
         picoWriter.writeln("distributionUrl=https\\://services.gradle.org/distributions/gradle-7.6.1-bin.zip");
