@@ -96,10 +96,10 @@ public class AppController implements Initializable {
     public ListView<Service> ServicesList;
     public ListView<Controller> ControllerList;
     public ListView<Domain> DomainList;
-    public TextField RepositoryField;
-    public TextField ServiceField;
-    public TextField ControllerField;
-    public TextField DomainField;
+    public TextField RepositoryNameField;
+    public TextField ServiceNameField;
+    public TextField ControllerNameField;
+    public TextField DomainNameField;
     public Button GenerateButton;
     public Button addControllerButton;
     public Button addDomainButton;
@@ -121,7 +121,7 @@ public class AppController implements Initializable {
     public MenuItem DomainContextFieldId;
     public TextField usernameField;
     public PasswordField passwordField;
-    public CheckBox createDatabaseCheckBox;
+    public CheckBox createTablesCheckBox;
 
     private String locationURI;
     private String language;
@@ -252,7 +252,7 @@ public class AppController implements Initializable {
     public void onGenerate() {
         if(this.language.equals("ro")) {
             if (this.ProjectManager.getValue() == null) {
-                showMessageDialog(null, "Proiectul nu are gestionator setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                showMessageDialog(null, "Proiectul nu are gestionar setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (this.SpringBootVersion.getValue() == null) {
@@ -273,7 +273,7 @@ public class AppController implements Initializable {
             }
             if(this.DatabaseType.getValue()!=null && this.DatabaseLink.getText().equals("") && !this.DatabaseType.getValue().equals("None") )
             {
-                showMessageDialog(null, "Proiectul cu tipul de bază de date setat nu are link aceasta!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                showMessageDialog(null, "Proiectul cu tipul de bază de date setat nu are link setat!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if(this.SpringBootVersion.getValue().startsWith("3") && this.JavaVersion.getValue()<17)
@@ -374,7 +374,7 @@ public class AppController implements Initializable {
                 else
                     showMessageDialog(null,"The project has been generated!","SUCCESS", JOptionPane.INFORMATION_MESSAGE);
 
-                if(this.DatabaseType.getValue().equals("MariaDB") && this.createDatabaseCheckBox.isSelected())
+                if(this.DatabaseType.getValue().equals("MariaDB") && this.createTablesCheckBox.isSelected())
                     createTables();
             }
         }
@@ -1121,7 +1121,7 @@ public class AppController implements Initializable {
             if(DatabaseType.getValue()==null || !DatabaseType.getValue().equals("MariaDB")){
                 usernameField.setDisable(true);
                 passwordField.setDisable(true);
-                createDatabaseCheckBox.setDisable(true);
+                createTablesCheckBox.setDisable(true);
             }
         }
         DomainContextFieldId.setVisible(true);
@@ -1141,22 +1141,22 @@ public class AppController implements Initializable {
         dependencyOptionalCombobox.setValue(null);
         dependencyTypeField.clear();
         dependencyVersionField.clear();
-        DomainField.clear();
+        searchBar.clear();
+        DomainNameField.clear();
+        RepositoryNameField.clear();
+        ServiceNameField.clear();
         fieldTextField.clear();
         RelationField.clear();
+        ControllerNameField.clear();
         typeCombobox.setValue(null);
         domainFieldTable.getItems().clear();
-        RepositoryField.clear();
+        relationCombobox.setValue(null);
         domainCombobox.setValue(null);
-        ServiceField.clear();
         repositoryCombobox.setValue(null);
-        serviceRepositoryList.getItems().clear();
-        ControllerField.clear();
         serviceCombobox.setValue(null);
+        serviceRepositoryList.getItems().clear();
         controllerServiceList.getItems().clear();
         relationCombobox.getItems().clear();
-        relationCombobox.setValue(null);
-        searchBar.clear();
         dependencySearchListView.getItems().clear();
         mustEdit=false;
     }
@@ -1224,7 +1224,7 @@ public class AppController implements Initializable {
     public void OK_Domain() {
         ArrayList<String> idTypes=new ArrayList<>(Arrays.asList("String","Integer","Long","UUID"));
         if(this.language.equals("ro")) {
-            if (DomainField.getText().equals("")) {
+            if (DomainNameField.getText().equals("")) {
                 showMessageDialog(null, "Domeniul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1236,13 +1236,13 @@ public class AppController implements Initializable {
             if(!idTypes.contains(domainFieldTable.getItems().get(0).getValue()))
             {
                 showMessageDialog(null, "Identificatorul nu poate fi de tipul "
-                        +domainFieldTable.getItems().get(0).getValue()+"!", "WARNING", JOptionPane.WARNING_MESSAGE);
+                        + domainFieldTable.getItems().get(0).getValue()+"!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
-            if (DomainField.getText().equals("")) {
+            if (DomainNameField.getText().equals("")) {
                 showMessageDialog(null, "The Domain has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1254,19 +1254,19 @@ public class AppController implements Initializable {
             if(!idTypes.contains(domainFieldTable.getItems().get(0).getValue()))
             {
                 showMessageDialog(null, "The Identifier can't be of "
-                        +domainFieldTable.getItems().get(0).getValue()+" type!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
+                        + domainFieldTable.getItems().get(0).getValue()+" type!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         Domain domain,currentDomain=DomainList.getSelectionModel().getSelectedItem();
         if(currentDomain!=null && currentDomain.isRelation())
         {
-            domain = new Domain(DomainField.getText(),
+            domain = new Domain(DomainNameField.getText(),
                     new ArrayList<>(domainFieldTable.getItems()),true,
                     currentDomain.getFirstDomain(),currentDomain.getSecondDomain());
         }
         else
-            domain = new Domain(DomainField.getText(),new ArrayList<>(domainFieldTable.getItems()));
+            domain = new Domain(DomainNameField.getText(),new ArrayList<>(domainFieldTable.getItems()));
         if(relationCombobox.getValue()!=null) {
             Domain domain2 = relationCombobox.getValue();
             if(!RelationField.getText().equals("") && this.DatabaseType.getValue().equals("MariaDB")) {
@@ -1285,7 +1285,7 @@ public class AppController implements Initializable {
                 this.domainCombobox.getItems().add(relation);
             }
             else if(this.DatabaseType.getValue().equals("MongoDB")){
-                domain = new Domain(DomainField.getText(),new ArrayList<>(domainFieldTable.getItems()),domain2);
+                domain = new Domain(DomainNameField.getText(),new ArrayList<>(domainFieldTable.getItems()),domain2);
             }
         }
         if(mustEdit) {
@@ -1355,7 +1355,7 @@ public class AppController implements Initializable {
 
     public void OK_Repository() {
         if(this.language.equals("ro")) {
-            if (RepositoryField.getText().equals("")) {
+            if (RepositoryNameField.getText().equals("")) {
                 showMessageDialog(null, "Repozitoriul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1367,7 +1367,7 @@ public class AppController implements Initializable {
         }
         else
         {
-            if (RepositoryField.getText().equals("")) {
+            if (RepositoryNameField.getText().equals("")) {
                 showMessageDialog(null, "The Repository has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
@@ -1378,7 +1378,7 @@ public class AppController implements Initializable {
             }
         }
         try {
-            Repository repository = new Repository(RepositoryField.getText(), domainCombobox.getValue());
+            Repository repository = new Repository(RepositoryNameField.getText(), domainCombobox.getValue());
             if (mustEdit) {
                 Repository oldRepository = RepositoriesList.getSelectionModel().getSelectedItem();
                 this.RepositoriesList.getItems().add(RepositoriesList.getSelectionModel().getSelectedIndex(), repository);
@@ -1438,19 +1438,19 @@ public class AppController implements Initializable {
 
     public void OK_Service() {
         if(this.language.equals("ro")) {
-            if (ServiceField.getText().equals("")) {
+            if (ServiceNameField.getText().equals("")) {
                 showMessageDialog(null, "Serviciul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
-            if (ServiceField.getText().equals("")) {
+            if (ServiceNameField.getText().equals("")) {
                 showMessageDialog(null, "The Service has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
-        Service service = new Service(ServiceField.getText(),new ArrayList<>(serviceRepositoryList.getItems()));
+        Service service = new Service(ServiceNameField.getText(),new ArrayList<>(serviceRepositoryList.getItems()));
         if(mustEdit) {
             Service oldService = ServicesList.getSelectionModel().getSelectedItem();
             this.ServicesList.getItems().add(ServicesList.getSelectionModel().getSelectedIndex(),service);
@@ -1484,19 +1484,19 @@ public class AppController implements Initializable {
 
     public void OK_Controller() {
         if(this.language.equals("ro")) {
-            if (ControllerField.getText().equals("")) {
+            if (ControllerNameField.getText().equals("")) {
                 showMessageDialog(null, "Controller-ul nu are nume!", "ATENȚIE", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
         else
         {
-            if (ControllerField.getText().equals("")) {
+            if (ControllerNameField.getText().equals("")) {
                 showMessageDialog(null, "The Controller has no name!", "WARNING", JOptionPane.WARNING_MESSAGE);
                 return;
             }
         }
-        Controller controller=new Controller(ControllerField.getText(),new ArrayList<>(controllerServiceList.getItems()));
+        Controller controller=new Controller(ControllerNameField.getText(),new ArrayList<>(controllerServiceList.getItems()));
         if(mustEdit) {
             this.ControllerList.getItems().add(ControllerList.getSelectionModel().getSelectedIndex(),controller);
             this.ControllerList.getItems().remove(ControllerList.getSelectionModel().getSelectedItem());
@@ -1574,7 +1574,7 @@ public class AppController implements Initializable {
         Repository repository = this.RepositoriesList.getSelectionModel().getSelectedItem();
         if(repository!=null) {
             popUp(repositoryAnchorPane);
-            RepositoryField.setText(repository.getName());
+            RepositoryNameField.setText(repository.getName());
             domainCombobox.setValue(repository.getDomain());
         }
     }
@@ -1591,7 +1591,7 @@ public class AppController implements Initializable {
             if(domain.getRelationClass()!=null)
                 relationCombobox.setValue(domain.getRelationClass());
             popUp(domainAnchorPane);
-            DomainField.setText(domain.getName());
+            DomainNameField.setText(domain.getName());
             if(domain.isRelation()) {
                 DomainContextFieldId.setVisible(false);
             }
@@ -1604,7 +1604,7 @@ public class AppController implements Initializable {
         Service service = this.ServicesList.getSelectionModel().getSelectedItem();
         if(service!=null) {
             popUp(serviceAnchorPane);
-            ServiceField.setText(service.getName());
+            ServiceNameField.setText(service.getName());
             serviceRepositoryList.setItems(FXCollections.observableArrayList(service.getRepositories()));
         }
     }
@@ -1614,7 +1614,7 @@ public class AppController implements Initializable {
         Controller controller = this.ControllerList.getSelectionModel().getSelectedItem();
         if(controller!=null) {
             popUp(controllerAnchorPane);
-            ControllerField.setText(controller.getName());
+            ControllerNameField.setText(controller.getName());
             controllerServiceList.setItems(FXCollections.observableArrayList(controller.getServices()));
         }
     }
@@ -1653,7 +1653,7 @@ public class AppController implements Initializable {
         this.addRepositoryButton.setDisable(this.DatabaseType.getValue()!=null && this.DatabaseType.getValue().equals("None"));
         this.usernameField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.passwordField.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
-        this.createDatabaseCheckBox.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
+        this.createTablesCheckBox.setDisable(!this.DatabaseType.getValue().equals("MariaDB"));
         this.DomainList.getItems().clear();
         this.domainCombobox.getItems().clear();
         this.relationCombobox.getItems().clear();
@@ -1701,10 +1701,10 @@ public class AppController implements Initializable {
         this.Description.setPromptText("Description");
         this.Group.setPromptText("Group");
         this.ProjectName.setPromptText("Project Name");
-        this.DomainField.setPromptText("Domain");
+        this.DomainNameField.setPromptText("Domain");
         this.button_addField.setText("Add field");
-        this.ServiceField.setPromptText("Service");
-        this.RepositoryField.setPromptText("Repository");
+        this.ServiceNameField.setPromptText("Service");
+        this.RepositoryNameField.setPromptText("Repository");
         this.DatabaseLink.setPromptText("Database Link");
         this.RepositoryLabel.setText("Repositories");
         this.ControllerLabel.setText("Controllers");
@@ -1739,7 +1739,7 @@ public class AppController implements Initializable {
         this.DomainContextFieldDelete.setText("Delete");
         this.RelationField.setPromptText("Relation Name");
         this.relationCombobox.setPromptText("Relation");
-        this.ControllerField.setPromptText("Controller");
+        this.ControllerNameField.setPromptText("Controller");
 
         this.dependencyArtifactField.setPromptText("Artifact");
         this.dependencyTypeField.setPromptText("Type");
@@ -1751,7 +1751,7 @@ public class AppController implements Initializable {
         this.DomainContextFieldId.setText("Make it ID");
         this.usernameField.setPromptText("MariaDB Username");
         this.passwordField.setPromptText("MariaDB Password");
-        this.createDatabaseCheckBox.setText("Create Database");
+        this.createTablesCheckBox.setText("Create Tables");
     }
 
     public void onRomanianClick() {
@@ -1773,9 +1773,9 @@ public class AppController implements Initializable {
         this.Description.setPromptText("Descriere");
         this.Group.setPromptText("Grup");
         this.ProjectName.setPromptText("Nume proiect");
-        this.DomainField.setPromptText("Domeniu");
-        this.ServiceField.setPromptText("Serviciu");
-        this.RepositoryField.setPromptText("Repozitoriu");
+        this.DomainNameField.setPromptText("Domeniu");
+        this.ServiceNameField.setPromptText("Serviciu");
+        this.RepositoryNameField.setPromptText("Repozitoriu");
         this.DatabaseLink.setPromptText("Link către bază de date");
         this.RepositoryLabel.setText("Repozitorii");
         this.ControllerLabel.setText("Controller-e");
@@ -1811,7 +1811,7 @@ public class AppController implements Initializable {
         this.DomainContextFieldDelete.setText("Șterge");
         this.RelationField.setPromptText("Nume Relație");
         this.relationCombobox.setPromptText("Relație");
-        this.ControllerField.setPromptText("Nume controller");
+        this.ControllerNameField.setPromptText("Nume controller");
 
         this.dependencyArtifactField.setPromptText("Artefact");
         this.dependencyTypeField.setPromptText("Tip");
@@ -1823,7 +1823,7 @@ public class AppController implements Initializable {
         this.DomainContextFieldId.setText("Declară-l identificator unic");
         this.usernameField.setPromptText("Nume de utilizator MariaDB");
         this.passwordField.setPromptText("Parolă MariaDB");
-        this.createDatabaseCheckBox.setText("Creare Baza de date");
+        this.createTablesCheckBox.setText("Creare Tabele");
     }
 
     public void onFinishedSearch() {

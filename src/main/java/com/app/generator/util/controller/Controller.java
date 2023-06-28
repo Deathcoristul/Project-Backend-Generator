@@ -78,6 +78,7 @@ public class Controller {
                     picoWriter.writeln("import " + GroupAndArtefact + ".domains.*");
             }
             picoWriter.writeln("");
+            picoWriter.writeln("@CrossOrigin(exposedHeaders=\"Access-Control-Allow-Origin\")");
             picoWriter.writeln("@Controller");
             picoWriter.writeln("@RequestMapping(\"/"+this.name.toLowerCase()+"\")");
             picoWriter.writeln_r("class "+StringUtils.capitalize(this.name)+" {");
@@ -201,6 +202,7 @@ public class Controller {
                     picoWriter.writeln("import " + GroupAndArtefact + ".domains.*;");
             }
             picoWriter.writeln("");
+            picoWriter.writeln("@CrossOrigin(exposedHeaders=\"Access-Control-Allow-Origin\")");
             picoWriter.writeln("@Controller");
             picoWriter.writeln("@RequestMapping(\"/"+this.name.toLowerCase()+"\")");
             picoWriter.writeln_r("public class "+StringUtils.capitalize(this.name)+" {");

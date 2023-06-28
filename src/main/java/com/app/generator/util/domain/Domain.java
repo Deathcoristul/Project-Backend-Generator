@@ -104,16 +104,15 @@ public class Domain {
             picoWriter.writeln("package "+pckg);
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*");
-            picoWriter.writeln("import java.io.Serializable");
+            if(isRelation())
+                picoWriter.writeln("import java.io.Serializable");
             if(database.equals("MariaDB")) {
                 picoWriter.writeln("import "+persistence+".persistence.*");
             }
             else {
-                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document");
-                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.DocumentReference");
+                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.*");
                 picoWriter.writeln("import org.springframework.data.annotation.Id");
             }
-            picoWriter.writeln("import "+persistence+".validation.constraints.*");
             picoWriter.writeln("");
             if(database.equals("MariaDB")) {
                 picoWriter.writeln("@Entity");
@@ -174,16 +173,15 @@ public class Domain {
             picoWriter.writeln("package "+pckg+";");
             picoWriter.writeln("");
             picoWriter.writeln("import java.util.*;");
-            picoWriter.writeln("import java.io.Serializable;");
+            if(isRelation())
+                picoWriter.writeln("import java.io.Serializable;");
             if(database.equals("MariaDB")) {
                 picoWriter.writeln("import "+persistence+".persistence.*;");
             }
             else {
-                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.Document;");
-                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.DocumentReference;");
+                picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.*;");
                 picoWriter.writeln("import org.springframework.data.annotation.Id;");
             }
-            picoWriter.writeln("import "+persistence+".validation.constraints.*;");
             picoWriter.writeln("");
             if(lombok) {
                 picoWriter.writeln("import lombok.*;");

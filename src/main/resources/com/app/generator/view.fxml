@@ -136,7 +136,7 @@
       <children>
          <Button fx:id="domainCancelButton" layoutX="159.0" layoutY="338.0" minWidth="-Infinity" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" />
          <Button layoutX="26.0" layoutY="338.0" mnemonicParsing="false" onAction="#OK_Domain" text="OK" />
-         <TextField fx:id="DomainField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Nume domeniu" stylesheets="@styles.css" />
+         <TextField fx:id="DomainNameField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="202.0" promptText="Nume domeniu" stylesheets="@styles.css" />
          <TableView fx:id="domainFieldTable" layoutX="26.0" layoutY="144.0" prefHeight="92.0" prefWidth="202.0">
            <columns>
              <TableColumn fx:id="columnName" prefWidth="104.0" text="Nume" />
@@ -162,7 +162,7 @@
       <children>
          <Button fx:id="repositoryCancelButton" layoutX="86.0" layoutY="108.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
          <Button layoutX="26.0" layoutY="108.0" mnemonicParsing="false" onAction="#OK_Repository" text="OK" />
-         <TextField fx:id="RepositoryField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="126.0" promptText="Nume repositoriu" stylesheets="@styles.css" />
+         <TextField fx:id="RepositoryNameField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="126.0" promptText="Nume repositoriu" stylesheets="@styles.css" />
          <ComboBox fx:id="domainCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="126.0" promptText="Domeniu" />
       </children>
    </AnchorPane>
@@ -170,7 +170,7 @@
       <children>
          <Button fx:id="serviceCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
          <Button layoutX="26.0" layoutY="203.0" mnemonicParsing="false" onAction="#OK_Service" text="OK" />
-         <TextField fx:id="ServiceField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume serviciu" stylesheets="@styles.css" />
+         <TextField fx:id="ServiceNameField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume serviciu" stylesheets="@styles.css" />
          <ComboBox fx:id="repositoryCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="109.0" promptText="Repositoriu" />
          <Button fx:id="button_addRepository" layoutX="147.0" layoutY="56.0" mnemonicParsing="false" onAction="#onAddRepositoryInService" prefHeight="27.0" prefWidth="126.0" text="Adaugă repositoriu" />
          <ListView fx:id="serviceRepositoryList" layoutX="26.0" layoutY="97.0" prefHeight="92.0" prefWidth="246.0">
@@ -188,7 +188,7 @@
       <children>
          <Button fx:id="controllerCancelButton" layoutX="205.0" layoutY="203.0" mnemonicParsing="false" onAction="#returnToMain" text="Anulează" textAlignment="RIGHT" />
          <Button layoutX="26.0" layoutY="203.0" mnemonicParsing="false" onAction="#OK_Controller" text="OK" />
-         <TextField fx:id="ControllerField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume controller" stylesheets="@styles.css" />
+         <TextField fx:id="ControllerNameField" layoutX="26.0" layoutY="14.0" prefHeight="26.0" prefWidth="245.0" promptText="Nume controller" stylesheets="@styles.css" />
          <ComboBox fx:id="serviceCombobox" layoutX="26.0" layoutY="55.0" prefHeight="26.0" prefWidth="102.0" promptText="Serviciu" />
          <Button fx:id="button_addService" layoutX="147.0" layoutY="56.0" mnemonicParsing="false" onAction="#onAddServiceInController" prefHeight="27.0" prefWidth="126.0" text="Adaugă serviciu" />
          <ListView fx:id="controllerServiceList" layoutX="26.0" layoutY="97.0" prefHeight="92.0" prefWidth="246.0">
@@ -219,5 +219,8 @@
    </AnchorPane>
    <TextField fx:id="usernameField" disable="true" layoutX="14.0" layoutY="574.0" prefHeight="26.0" prefWidth="223.0" promptText="Nume de utilizator MariaDB" />
    <PasswordField fx:id="passwordField" disable="true" layoutX="247.0" layoutY="574.0" prefHeight="26.0" prefWidth="223.0" promptText="Parolă MariaDB" />
-   <CheckBox fx:id="createDatabaseCheckBox" disable="true" layoutX="529.0" layoutY="578.0" mnemonicParsing="false" prefHeight="18.0" prefWidth="136.0" text="Creare Baza de date" textAlignment="CENTER" />
+   <CheckBox fx:id="createTablesCheckBox" disable="true" layoutX="529.0" layoutY="578.0" mnemonicParsing="false" prefHeight="18.0" prefWidth="136.0" text="Creare Tabele" textAlignment="CENTER">
+      <font>
+         <Font size="13.0" />
+      </font></CheckBox>
 </AnchorPane>
