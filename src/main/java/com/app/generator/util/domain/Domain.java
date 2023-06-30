@@ -106,9 +106,8 @@ public class Domain {
             picoWriter.writeln("import java.util.*");
             if(isRelation())
                 picoWriter.writeln("import java.io.Serializable");
-            if(database.equals("MariaDB")) {
+            if(database.equals("MariaDB"))
                 picoWriter.writeln("import "+persistence+".persistence.*");
-            }
             else {
                 picoWriter.writeln("import org.springframework.data.mongodb.core.mapping.*");
                 picoWriter.writeln("import org.springframework.data.annotation.Id");
@@ -143,9 +142,8 @@ public class Domain {
             else{
                 if(database.equals("MariaDB"))
                     picoWriter.writeln_r("class "+nameCap+"(");
-                else {
+                else
                     picoWriter.writeln_r("open class " + nameCap + "(");
-                }
 
                 picoWriter.writeln("@Id");
                 for (Pair<String, String> field : fields) {
@@ -210,15 +208,13 @@ public class Domain {
                 if(!lombok) {
                     StringBuilder params = new StringBuilder();
                     for(Pair<String,String> field : fields)
-                    {
                         params.append(field.getValue()).append(" ").append(field.getKey()).append(",");
-                    }
+
                     params.deleteCharAt(params.length()-1);
                     picoWriter.writeln_r("public "+nameCap+"("+params+"){");
                     for(Pair<String,String> field : fields)
-                    {
                         picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
-                    }
+
                     picoWriter.writeln_l("}");
                     for (Pair<String, String> field : fields) {
                         picoWriter.writeln_r("public " + field.getValue() + " get" + StringUtils.capitalize(field.getKey()) + "(){");
@@ -250,21 +246,17 @@ public class Domain {
                 picoWriter.writeln_r("public class "+nameCap+"{");
                 picoWriter.writeln("@Id");
                 for(Pair<String,String> field:fields)
-                {
                     picoWriter.writeln("private "+field.getValue()+" "+field.getKey()+";");
-                }
+
                 StringBuilder params = new StringBuilder();
                 for(Pair<String,String> field : fields)
-                {
                     params.append(field.getValue()).append(" ").append(field.getKey()).append(",");
-                }
+
                 params.deleteCharAt(params.length()-1);
                 if(!lombok) {
                     picoWriter.writeln_r("public "+nameCap+"("+params+"){");
                     for(Pair<String,String> field : fields)
-                    {
                         picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
-                    }
                     picoWriter.writeln_l("}");
                     for (Pair<String, String> field : fields) {
                         picoWriter.writeln_r("public " + field.getValue() + " get" + StringUtils.capitalize(field.getKey()) + "(){");
@@ -299,9 +291,8 @@ public class Domain {
                                 .append(StringUtils.uncapitalize(relationClass.getName()));
                         picoWriter.writeln_r("public "+nameCap+"("+params+"){");
                         for(Pair<String,String> field : fields)
-                        {
                             picoWriter.writeln("this."+field.getKey()+" = "+field.getKey()+";");
-                        }
+
                         picoWriter.writeln("this."+variableName +" = "+variableName+";");
                         picoWriter.writeln_l("}");
                     }
@@ -315,14 +306,4 @@ public class Domain {
         fileWriter.close();
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Domain domain = (Domain) obj;
-        return Objects.equals(name, domain.name) &&
-                Objects.equals(fields, domain.fields) &&
-                isRelation == domain.isRelation &&
-                Objects.equals(relationClass, domain.relationClass);
-    }
 }
