@@ -31,14 +31,6 @@ public class Repository {
         return name;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj) return true;//daca cele 2 referinte indica acelasi obiect
-        if (obj == null || getClass() != obj.getClass()) return false;
-        Repository that = (Repository) obj;
-        return Objects.equals(name, that.name) && Objects.equals(domain, that.domain);
-    }
-
     public void write(String repositoriesURI, String lang, String database) throws IOException {
         String[] parts=repositoriesURI.split("\\\\");
         boolean langFolderFound=false;
